@@ -55,6 +55,7 @@ def main(pdf_path, output_text_path):
         print(f"OCR results saved to {output_text_path}")
 
 
+# Need to change this to a function which we would call in main.py
 if __name__ == "__main__":
     pdf_path = '/Users/zyy/Documents/GitHub/TE-AI-Cup/data/test01_500000164476.pdf'
     output_text_path = '/Users/zyy/Documents/GitHub/TE-AI-Cup/result/result.txt'
