@@ -13,6 +13,12 @@ from sklearn.svm import SVC
 from torch import nn, optim
 from torch.utils.data import TensorDataset
 import torch.nn.functional as F
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
+from torchvision import models
+
 
 # mnist = tf.keras.datasets.mnist
 
@@ -192,31 +198,72 @@ def model_generator(features, labels, feature_extraction_method=OVERLAPPING_METH
         model.fit(histograms, labels)
         return model
 
-    if classifier_type == NEURAL_NETWORK_CLASSIFIER:
-        model = nn.Sequential(nn.Linear(HISTOGRAM_BINS, 128),
-                              nn.ReLU(),
-                              nn.Dropout(p=NN_DROPOUT),
-                              nn.Linear(128, 64),
-                              nn.ReLU(),
-                              nn.Dropout(p=NN_DROPOUT),
-                              nn.Linear(64, 3))
+    # if classifier_type == NEURAL_NETWORK_CLASSIFIER:
+    #     model = nn.Sequential(nn.Linear(HISTOGRAM_BINS, 128),
+    #                           nn.ReLU(),
+    #                           nn.Dropout(p=NN_DROPOUT),
+    #                           nn.Linear(128, 64),
+    #                           nn.ReLU(),
+    #                           nn.Dropout(p=NN_DROPOUT),
+    #                           nn.Linear(64, 3))
+    #     model.to(DEVICE)
+    #     criterion = nn.CrossEntropyLoss()
+    #     optimizer = optim.Adamax(
+    #         model.parameters(), lr=NN_LEARNING_RATE, weight_decay=NN_WEIGHT_DECAY)
+    #     inputs = torch.Tensor(histograms)
+    #     labels = torch.tensor(labels, dtype=torch.long) - 1
+    #     dataset = TensorDataset(inputs, labels)
+    #     train_loader = torch.utils.data.DataLoader(
+    #         dataset, batch_size=NN_BATCH_SIZE, shuffle=True)
+    #     for epoch in range(NN_EPOCHS):
+    #         for inputs, labels in train_loader:
+    #             inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+    #             output = model(inputs)
+    #             loss = criterion(output, labels)
+    #             optimizer.zero_grad()
+    #             loss.backward()
+    #             optimizer.step()
+    #     return model
+    elif classifier_type == NEURAL_NETWORK_CLASSIFIER:
+        # Load a pre-trained VGG-16 model
+        model = models.vgg16(pretrained=True)
+
+        # Freeze the parameters (we won't backprop through them)
+        for param in model.parameters():
+            param.requires_grad = False
+
+        # Replace the classifier part of the VGG-16
+        # Get the input feature size of the last layer
+        num_features = model.classifier[6].in_features
+        model.classifier[6] = nn.Linear(num_features, len(
+            set(labels)))  # Assuming labels are 0-indexed
+
         model.to(DEVICE)
+
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adamax(
-            model.parameters(), lr=NN_LEARNING_RATE, weight_decay=NN_WEIGHT_DECAY)
-        inputs = torch.Tensor(histograms)
-        labels = torch.tensor(labels, dtype=torch.long) - 1
+        optimizer = optim.Adamax(model.classifier[6].parameters(
+        ), lr=NN_LEARNING_RATE, weight_decay=NN_WEIGHT_DECAY)
+
+        # Assuming histograms are your features and need to be reshaped appropriately for VGG-16 input
+        # Example reshaping, adjust as necessary
+        inputs = torch.Tensor(histograms).view(-1, 3, 224, 224)
+        labels = torch.tensor(labels, dtype=torch.long)
         dataset = TensorDataset(inputs, labels)
-        train_loader = torch.utils.data.DataLoader(
+        train_loader = DataLoader(
             dataset, batch_size=NN_BATCH_SIZE, shuffle=True)
+
+        # Training loop
+        model.train()
         for epoch in range(NN_EPOCHS):
             for inputs, labels in train_loader:
                 inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
-                output = model(inputs)
-                loss = criterion(output, labels)
                 optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
+
+        # Return the model and DataLoader for further use
         return model
 
 
