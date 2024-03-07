@@ -1,128 +1,385 @@
-import numpy as np
-import tensorflow as tf
+import os
+import random
+import time
+from os import walk
+import cv2
 import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from skimage.feature import local_binary_pattern
+from skimage.measure import find_contours
+from skimage.morphology import binary_dilation
+from sklearn.svm import SVC
+from torch import nn, optim
+from torch.utils.data import TensorDataset
+import torch.nn.functional as F
 
-mnist = tf.keras.datasets.mnist
+# mnist = tf.keras.datasets.mnist
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+# (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
-# train_data = mnist.train.images  # Returns np.array
-# train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
-# eval_data = mnist.test.images  # Returns np.array
-# eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
+# Parameters and constants
+AVAILABLE_WRITERS = 672
+RESULTS_FILE = 'results.txt'
+TIME_FILE = 'time.txt'
+OVERLAPPING_METHOD = 0
+LINES_METHOD = 1
+SUPPORT_VECTOR_CLASSIFIER = 0
+NEURAL_NETWORK_CLASSIFIER = 1
+HISTOGRAM_BINS = 256
+NN_LEARNING_RATE = 0.003
+NN_WEIGHT_DECAY = 0.01
+NN_DROPOUT = 0.25
+NN_EPOCHS = 200
+NN_BATCH_SIZE = 16
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-train_data = x_train.reshape(-1, 28 * 28).astype(np.float32) / 255.0
-eval_data = x_test.reshape(-1, 28 * 28).astype(np.float32) / 255.0
 
-# The labels are already integers, so we can use them directly
-train_labels = np.asarray(y_train, dtype=np.int32)
-eval_labels = np.asarray(y_test, dtype=np.int32)
+def show_images(images, titles=None):
+    n_ims = len(images)
+    if titles is None:
+        titles = ['(%d)' % i for i in range(1, n_ims + 1)]
+    fig = plt.figure()
+    n = 1
+    for image, title in zip(images, titles):
+        a = fig.add_subplot(1, n_ims, n)
+        if image.ndim == 2:
+            plt.gray()
+        plt.imshow(image)
+        a.set_title(title)
+        n += 1
+    fig.set_size_inches(np.array(fig.get_size_inches()) * n_ims)
+    plt.show()
 
 
-index = 7
-plt.imshow(train_data[index].reshape(28, 28))
-print("y = " + str(np.squeeze(train_labels[index])))
+def preprocess_image(img, feature_extraction_method=OVERLAPPING_METHOD):
+    if feature_extraction_method == OVERLAPPING_METHOD:
+        img_copy = img.copy()
+        if len(img.shape) > 2:
+            img_copy = cv2.cvtColor(img_copy, cv2.COLOR_BGR2GRAY)
+        img_copy = cv2.medianBlur(img_copy, 5)
+        img_copy = cv2.threshold(
+            img_copy, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+        min_vertical, max_vertical = get_corpus_boundaries(img_copy)
+        img_copy = img_copy[min_vertical:max_vertical]
+        return img_copy
 
-print("number of training examples = " + str(train_data.shape[0]))
-print("number of evaluation examples = " + str(eval_data.shape[0]))
-print("X_train shape: " + str(train_data.shape))
-print("Y_train shape: " + str(train_labels.shape))
-print("X_test shape: " + str(eval_data.shape))
-print("Y_test shape: " + str(eval_labels.shape))
+    if feature_extraction_method == LINES_METHOD:
+        img_copy = img.copy()
+        if len(img.shape) > 2:
+            grayscale_img = cv2.cvtColor(img_copy, cv2.COLOR_BGR2GRAY)
+        else:
+            grayscale_img = img.copy()
+        img_copy = cv2.threshold(
+            grayscale_img, 127, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+        min_vertical, max_vertical = get_corpus_boundaries(img_copy)
+        img_copy = img_copy[min_vertical:max_vertical]
+        grayscale_img = grayscale_img[min_vertical:max_vertical]
+        filter_kernel = np.array([[-1, -1, -1], [-1, 9, -1], [-1, -1, -1]])
+        img_copy_sharpened = cv2.filter2D(img_copy, -1, filter_kernel)
+        return img_copy_sharpened, grayscale_img
 
-# def cnn_model_fn(features, labels, mode):
-#     # Input Layer
-#     input_height, input_width = 28, 28
-#     input_channels = 1
-#     input_layer = tf.reshape(
-#         features["x"], [-1, input_height, input_width, input_channels])
 
-#     # Convolutional Layer #1 and Pooling Layer #1
-#     conv1_1 = tf.layers.conv2d(inputs=input_layer, filters=64, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     conv1_2 = tf.layers.conv2d(inputs=conv1_1, filters=64, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     pool1 = tf.layers.max_pooling2d(inputs=conv1_2, pool_size=[
-#                                     2, 2], strides=2, padding="same")
+def get_corpus_boundaries(img):
+    crop = []
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (100, 1))
+    detect_horizontal = cv2.morphologyEx(
+        img, cv2.MORPH_OPEN, horizontal_kernel, iterations=2)
+    contours = cv2.findContours(
+        detect_horizontal, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    prev = -1
+    for i, c in enumerate(contours):
+        if np.abs(prev - int(c[0][0][1])) > 800 or prev == -1:
+            crop.append(int(c[0][0][1]))
+            prev = int(c[0][0][1])
+    crop.sort()
+    max_vertical = crop[1] - 20
+    min_vertical = crop[0] + 20
+    return min_vertical, max_vertical
 
-#     # Convolutional Layer #2 and Pooling Layer #2
-#     conv2_1 = tf.layers.conv2d(inputs=pool1, filters=128, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     conv2_2 = tf.layers.conv2d(inputs=conv2_1, filters=128, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     pool2 = tf.layers.max_pooling2d(inputs=conv2_2, pool_size=[
-#                                     2, 2], strides=2, padding="same")
 
-#     # Convolutional Layer #3 and Pooling Layer #3
-#     conv3_1 = tf.layers.conv2d(inputs=pool2, filters=256, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     conv3_2 = tf.layers.conv2d(inputs=conv3_1, filters=256, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     pool3 = tf.layers.max_pooling2d(inputs=conv3_2, pool_size=[
-#                                     2, 2], strides=2, padding="same")
+def segment_image(img, num, grayscale_img=None):
+    if grayscale_img is not None:
+        grayscale_images = []
+        img_copy = np.copy(img)
+        kernel = np.ones((1, num))
+        img_copy = binary_dilation(img_copy, kernel)
+        bounding_boxes = find_contours(img_copy, 0.8)
+        for box in bounding_boxes:
+            x_min = int(np.min(box[:, 1]))
+            x_max = int(np.max(box[:, 1]))
+            y_min = int(np.min(box[:, 0]))
+            y_max = int(np.max(box[:, 0]))
+            if (y_max - y_min) > 50 and (x_max - x_min) > 50:
+                grayscale_images.append(
+                    grayscale_img[y_min:y_max, x_min:x_max])
+        return grayscale_images
+    images = []
+    img_copy = np.copy(img)
+    kernel = np.ones((1, num))
+    img_copy = binary_dilation(img_copy, kernel)
+    bounding_boxes = find_contours(img_copy, 0.8)
+    for box in bounding_boxes:
+        x_min = int(np.min(box[:, 1]))
+        x_max = int(np.max(box[:, 1]))
+        y_min = int(np.min(box[:, 0]))
+        y_max = int(np.max(box[:, 0]))
+        if (y_max - y_min) > 10 and (x_max - x_min) > 10:
+            images.append(img[y_min:y_max, x_min:x_max])
+    return images
 
-#     # Convolutional Layer #4 and Pooling Layer #4
-#     conv4_1 = tf.layers.conv2d(inputs=pool3, filters=512, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     conv4_2 = tf.layers.conv2d(inputs=conv4_1, filters=512, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     pool4 = tf.layers.max_pooling2d(inputs=conv4_2, pool_size=[
-#                                     2, 2], strides=2, padding="same")
 
-#     # Convolutional Layer #5 and Pooling Layer #5
-#     conv5_1 = tf.layers.conv2d(inputs=pool4, filters=512, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     conv5_2 = tf.layers.conv2d(inputs=conv5_1, filters=512, kernel_size=[
-#                                3, 3], padding="same", activation=tf.nn.relu)
-#     pool5 = tf.layers.max_pooling2d(inputs=conv5_2, pool_size=[
-#                                     2, 2], strides=2, padding="same")
+def overlap_words(words, avg_height):
+    overlapped_img = np.zeros((3600, 320))
+    index_i = 0
+    index_j = 0
+    max_height = 0
+    for word in words:
+        if word.shape[1] + index_j > overlapped_img.shape[1]:
+            max_height = 0
+            index_j = 0
+            index_i += int(avg_height // 2)
+        if word.shape[1] < overlapped_img.shape[1] and word.shape[0] < overlapped_img.shape[0]:
+            indices = np.copy(
+                overlapped_img[index_i:index_i + word.shape[0], index_j:index_j + word.shape[1]])
+            indices = np.maximum(indices, word)
+            overlapped_img[index_i:index_i + word.shape[0],
+                           index_j:index_j + word.shape[1]] = indices
+            index_j += word.shape[1]
+            if max_height < word.shape[0]:
+                max_height = word.shape[0]
+    overlapped_img = overlapped_img[:index_i + int(avg_height // 2), :]
+    return overlapped_img
 
-#     # FC Layers
-#     pool5_flat = tf.contrib.layers.flatten(pool5)
-#     FC1 = tf.layers.dense(inputs=pool5_flat, units=4096, activation=tf.nn.relu)
-#     FC2 = tf.layers.dense(inputs=FC1, units=4096, activation=tf.nn.relu)
-#     FC3 = tf.layers.dense(inputs=FC2, units=1000, activation=tf.nn.relu)
 
-#     """the training argument takes a boolean specifying whether or not the model is currently
-#     being run in training mode; dropout will only be performed if training is true. here,
-#     we check if the mode passed to our model function cnn_model_fn is train mode. """
-#     dropout = tf.layers.dropout(
-#         inputs=FC3, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+def get_textures(image):
+    index_i = 0
+    index_j = 0
+    texture_size = 100
+    textures = []
+    while index_i + texture_size < image.shape[0]:
+        if index_j + texture_size > image.shape[1]:
+            index_j = 0
+            index_i += texture_size
+        textures.append(np.copy(
+            image[index_i: index_i + texture_size, index_j: index_j + texture_size]))
+        index_j += texture_size
+    return textures
 
-#     # Logits Layer or the output layer. which will return the raw values for our predictions.
-#     # Like FC layer, logits layer is another dense layer. We leave the activation function empty
-#     # so we can apply the softmax
-#     logits = tf.layers.dense(inputs=dropout, units=10)
 
-#     # Then we make predictions based on raw output
-#     predictions = {
-#         # Generate predictions (for PREDICT and EVAL mode)
-#         # the predicted class for each example - a vlaue from 0-9
-#         "classes": tf.argmax(input=logits, axis=1),
-#         # to calculate the probablities for each target class we use the softmax
-#         "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
-#     }
+def model_generator(features, labels, feature_extraction_method=OVERLAPPING_METHOD,
+                    classifier_type=SUPPORT_VECTOR_CLASSIFIER):
+    histograms = []
 
-#     # so now our predictions are compiled in a dict object in python and using that we return an estimator object
-#     if mode == tf.estimator.ModeKeys.PREDICT:
-#         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+    if feature_extraction_method == OVERLAPPING_METHOD:
+        for texture_array in features:
+            for texture in texture_array:
+                lbp = local_binary_pattern(texture, 8, 3, 'default')
+                histogram, _ = np.histogram(
+                    lbp, density=False, bins=HISTOGRAM_BINS, range=(0, HISTOGRAM_BINS))
+                histograms.append(histogram)
 
-#     '''Calculate Loss (for both TRAIN and EVAL modes): computes the softmax entropy loss.
-#     This function both computes the softmax activation function as well as the resulting loss.'''
-#     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    elif feature_extraction_method == LINES_METHOD:
+        for line in features:
+            lbp = local_binary_pattern(line, 8, 3, 'default')
+            histogram, _ = np.histogram(
+                lbp, density=False, bins=HISTOGRAM_BINS, range=(0, HISTOGRAM_BINS))
+            histograms.append(histogram)
 
-#     # Configure the Training Options (for TRAIN mode)
-#     if mode == tf.estimator.ModeKeys.TRAIN:
-#         optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-#         train_op = optimizer.minimize(
-#             loss=loss, global_step=tf.train.get_global_step())
+    if classifier_type == SUPPORT_VECTOR_CLASSIFIER:
+        model = SVC(kernel='linear')
+        model.fit(histograms, labels)
+        return model
 
-#         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+    if classifier_type == NEURAL_NETWORK_CLASSIFIER:
+        model = nn.Sequential(nn.Linear(HISTOGRAM_BINS, 128),
+                              nn.ReLU(),
+                              nn.Dropout(p=NN_DROPOUT),
+                              nn.Linear(128, 64),
+                              nn.ReLU(),
+                              nn.Dropout(p=NN_DROPOUT),
+                              nn.Linear(64, 3))
+        model.to(DEVICE)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adamax(
+            model.parameters(), lr=NN_LEARNING_RATE, weight_decay=NN_WEIGHT_DECAY)
+        inputs = torch.Tensor(histograms)
+        labels = torch.tensor(labels, dtype=torch.long) - 1
+        dataset = TensorDataset(inputs, labels)
+        train_loader = torch.utils.data.DataLoader(
+            dataset, batch_size=NN_BATCH_SIZE, shuffle=True)
+        for epoch in range(NN_EPOCHS):
+            for inputs, labels in train_loader:
+                inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+                output = model(inputs)
+                loss = criterion(output, labels)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        return model
 
-#     # Add evaluation metrics (for EVAL mode)
-#     eval_metric_ops = {
-#         "accuracy": tf.metrics.accuracy(labels=labels,
-#                                         predictions=predictions["classes"])}
-#     return tf.estimator.EstimatorSpec(mode=mode,
-#                                       loss=loss,
-#                                       eval_metric_ops=eval_metric_ops)
+
+def evaluate_model(model, test_loader, device):
+    model.eval()  # Set the model to evaluation mode
+    with torch.no_grad():  # Disable gradient computation
+        for inputs, labels in test_loader:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            predictions = model(inputs)
+            _, predicted_labels = torch.max(predictions, 1)
+
+            print("Predictions:", predicted_labels.cpu().numpy())
+            print("True Labels:", labels.cpu().numpy())
+
+
+def predict(model, test_image, feature_extraction_method=OVERLAPPING_METHOD, classifier_type=SUPPORT_VECTOR_CLASSIFIER):
+    if feature_extraction_method == OVERLAPPING_METHOD:
+        img = preprocess_image(test_image)
+        words = segment_image(img, 3)
+        avg_height = 0
+        for word in words:
+            avg_height += word.shape[0] / len(words)
+        overlapped_img = overlap_words(words, avg_height)
+        textures = get_textures(overlapped_img)
+        prediction = np.zeros(4)
+        for texture in textures:
+            lbp = local_binary_pattern(texture, 8, 3, 'default')
+            histogram, _ = np.histogram(
+                lbp, density=False, bins=HISTOGRAM_BINS, range=(0, HISTOGRAM_BINS))
+            if classifier_type == SUPPORT_VECTOR_CLASSIFIER:
+                prediction[model.predict([histogram])] += 1
+            if classifier_type == NEURAL_NETWORK_CLASSIFIER:
+                with torch.no_grad():
+                    model.eval()
+                    histogram = torch.Tensor(histogram)
+                    probabilities = F.softmax(model.forward(histogram), dim=0)
+                    _, top_class = probabilities.topk(1)
+                    prediction[top_class + 1] += 1
+
+        return np.argmax(prediction)
+
+    if feature_extraction_method == LINES_METHOD:
+        img, grayscale_img = preprocess_image(
+            test_image, feature_extraction_method)
+        grayscale_lines = segment_image(img, 100, grayscale_img)
+        prediction = np.zeros(4)
+        for line in grayscale_lines:
+            lbp = local_binary_pattern(line, 8, 3, 'default')
+            histogram, _ = np.histogram(
+                lbp, density=False, bins=HISTOGRAM_BINS, range=(0, HISTOGRAM_BINS))
+            if classifier_type == SUPPORT_VECTOR_CLASSIFIER:
+                prediction[model.predict([histogram])] += 1
+            if classifier_type == NEURAL_NETWORK_CLASSIFIER:
+                with torch.no_grad():
+                    model.eval()
+                    histogram = torch.Tensor(histogram)
+                    probabilities = F.softmax(model.forward(histogram), dim=0)
+                    _, top_class = probabilities.topk(1)
+                    prediction[top_class + 1] += 1
+        return np.argmax(prediction)
+
+
+def read_random_images(root):
+    images = []
+    labels = []
+    test_images = []
+    test_labels = []
+    for i in range(3):
+        found_images = False
+        while not found_images:
+            images_path = root
+            random_writer = random.randrange(AVAILABLE_WRITERS)
+            if random_writer < 10:
+                random_writer = "00" + str(random_writer)
+            elif random_writer < 100:
+                random_writer = "0" + str(random_writer)
+            images_path = os.path.join(images_path, str(random_writer))
+            if not os.path.isdir(images_path):
+                continue
+            _, _, filenames = next(walk(images_path))
+            if len(filenames) <= 2 and i == 2 and len(test_images) == 0:
+                continue
+            if len(filenames) >= 2:
+                found_images = True
+                chosen_filenames = []
+                for j in range(2):
+                    random_filename = random.choice(filenames)
+                    while random_filename in chosen_filenames:
+                        random_filename = random.choice(filenames)
+                    chosen_filenames.append(random_filename)
+                    images.append(cv2.imread(
+                        os.path.join(images_path, random_filename)))
+                    labels.append(i + 1)
+                if len(filenames) >= 3:
+                    random_filename = random.choice(filenames)
+                    while random_filename in chosen_filenames:
+                        random_filename = random.choice(filenames)
+                    chosen_filenames.append(random_filename)
+                    test_images.append(cv2.imread(
+                        os.path.join(images_path, random_filename)))
+                    test_labels.append(i + 1)
+    print(labels)
+    test_choice = random.randint(0, len(test_images) - 1)
+    test_image = test_images[test_choice]
+    test_label = test_labels[test_choice]
+    return images, labels, test_image, test_label
+
+
+def extract_features(images, labels, feature_extraction_method=OVERLAPPING_METHOD):
+    if feature_extraction_method == LINES_METHOD:
+        lines_labels = []
+        lines = []
+        for image, label in zip(images, labels):
+            image, grayscale_image = preprocess_image(
+                image, feature_extraction_method)
+            grayscale_lines = segment_image(image, 100, grayscale_image)
+            for line in grayscale_lines:
+                lines.append(line)
+                lines_labels.append(label)
+        return lines, lines_labels
+
+    if feature_extraction_method == OVERLAPPING_METHOD:
+        textures = []
+        textures_labels = []
+        for image, label in zip(images, labels):
+            image = preprocess_image(image)
+            words = segment_image(image, 3)
+            avg_height = 0
+            for word in words:
+                avg_height += word.shape[0] / len(words)
+            overlapped_img = overlap_words(words, avg_height)
+            new_textures = get_textures(overlapped_img)
+            textures.append(new_textures)
+            for j in range(len(new_textures)):
+                textures_labels.append(label)
+        return textures, textures_labels
+
+
+epochs = 100
+root = 'archive/data'
+feature_extraction_method = OVERLAPPING_METHOD
+classifier_type = SUPPORT_VECTOR_CLASSIFIER
+correct_predictions = 0
+total_execution_time = 0
+
+for epoch in range(epochs):
+    images, labels, test_image, test_label = read_random_images(root)
+    start_time = time.time()
+    features, features_labels = extract_features(
+        images, labels, feature_extraction_method)
+    model = model_generator(features, features_labels,
+                            feature_extraction_method, classifier_type)
+    prediction = predict(
+        model, test_image, feature_extraction_method, classifier_type)
+    execution_time = time.time() - start_time
+    total_execution_time += execution_time
+    if prediction == test_label:
+        correct_predictions += 1
+    print("Epoch #{} | Execution time {} seconds | Model accuracy {}".format(
+        epoch + 1, round(execution_time, 2), round((correct_predictions / (epoch + 1)) * 100, 2)))
+
+print("Model accuracy = {}% using {} sample tests.".format(
+    (correct_predictions / epochs) * 100, epochs))
+print("Total execution time = {} using {} sample tests.".format(
+    round(total_execution_time, 2), epochs))
