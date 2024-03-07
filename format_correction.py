@@ -60,19 +60,10 @@ def process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_cro
     landscape_images = [rotate_image_to_landscape(image) for image in images]
     save_cropped_images(landscape_images, output_dirs, first_image_crop_lines, rest_image_crop_line)
 
-# Specify directories for header and table parts
-output_header_dir = "template/header"
-output_table_dir = "template/table"
-output_dirs = (output_header_dir, output_table_dir)
+# Function to be called from ocr_model.py
+def process_and_crop_pdf(pdf_path, header_dir, table_dir, first_image_crop_lines, rest_image_crop_line):
+    output_dirs = (header_dir, table_dir)
+    process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_crop_line)
 
-# Crop lines for the first image and the rest of the images
-first_image_crop_lines = (540, 1330)  
-rest_image_crop_line = (220, 1390)     
 
-# Process the PDF, cropping as required
-process_images(
-    pdf_path="data/Production Sheet/500000261553.pdf",
-    output_dirs=output_dirs,
-    first_image_crop_lines=first_image_crop_lines,
-    rest_image_crop_line=rest_image_crop_line
-)
+   
