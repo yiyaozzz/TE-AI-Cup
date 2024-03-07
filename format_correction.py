@@ -47,4 +47,4 @@ def process_pdf_to_landscape(pdf_path, output_dir):
 
 
 process_pdf_to_landscape(
-    "/Users/pravin/Desktop/TE_Comp/TE-AI-Cup/data/500000066049.pdf", "/Users/pravin/Desktop/TE_Comp/TE-AI-Cup/result")
+    "data/500000066049.pdf", "result")
