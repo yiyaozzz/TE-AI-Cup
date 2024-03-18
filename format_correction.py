@@ -4,10 +4,14 @@ from pdf2image import convert_from_path
 import os
 
 # Convert PDF to Image
+
+
 def convert_pdf_to_images(pdf_path):
     return convert_from_path(pdf_path)
 
 # Rotate the Portrait Format Into Landscape
+
+
 def rotate_image_to_landscape(image):
     image_np = np.array(image)
     # Convert RGB to BGR format
@@ -29,10 +33,13 @@ def crop_image(image, crop_lines, part):
     elif part == 'bottom':
         cropped_image = image[crop_lines[1]:, :]
     else:
-        raise ValueError("Invalid part_to_save value. Choose 'top', 'middle', or 'bottom'.")
+        raise ValueError(
+            "Invalid part_to_save value. Choose 'top', 'middle', or 'bottom'.")
     return cropped_image
 
 # Save cropped parts of first image and the middle parts of the rest of the images
+
+
 def save_cropped_images(images, output_dirs, first_image_crop_lines, rest_image_crop_line):
     header_dir, table_dir = output_dirs
 
@@ -45,25 +52,37 @@ def save_cropped_images(images, output_dirs, first_image_crop_lines, rest_image_
     # Process the first image
     first_image = images[0]
     header_part = crop_image(first_image, first_image_crop_lines, 'top')
-    table_part_first = crop_image(first_image, first_image_crop_lines, 'middle')
+    table_part_first = crop_image(
+        first_image, first_image_crop_lines, 'middle')
     cv2.imwrite(os.path.join(header_dir, "header.jpg"), header_part)
     cv2.imwrite(os.path.join(table_dir, "table_first.jpg"), table_part_first)
-    
+
     # Process the rest of the images
     for i, image in enumerate(images[1:], start=1):
         table_part_rest = crop_image(image, rest_image_crop_line, 'middle')
-        cv2.imwrite(os.path.join(table_dir, f"table_rest_{i}.jpg"), table_part_rest)
+        cv2.imwrite(os.path.join(
+            table_dir, f"table_rest_{i}.jpg"), table_part_rest)
 
 # Convert image into landscape and save the cropped images
+
+
 def process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_crop_line):
     images = convert_pdf_to_images(pdf_path)
     landscape_images = [rotate_image_to_landscape(image) for image in images]
-    save_cropped_images(landscape_images, output_dirs, first_image_crop_lines, rest_image_crop_line)
+    save_cropped_images(landscape_images, output_dirs,
+                        first_image_crop_lines, rest_image_crop_line)
+
 
 # Function to be called from ocr_model.py
 def process_and_crop_pdf(pdf_path, header_dir, table_dir, first_image_crop_lines, rest_image_crop_line):
     output_dirs = (header_dir, table_dir)
     process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_crop_line)
 
+<<<<<<< Updated upstream
+=======
+# Crop lines for the first image and the rest of the images
+first_image_crop_lines = (540, 1330)
+rest_image_crop_line = (220, 1390)
+>>>>>>> Stashed changes
 
    

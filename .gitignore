@@ -1,4 +1,5 @@
 .DS_Store
+<<<<<<< Updated upstream
 archive*
 template/header/header.jpg
 template/table/table_first.jpg
@@ -43,3 +44,7 @@ template/table/table_rest_34.jpg
 template/table/table_rest_35.jpg
 template/table/table_rest_36.jpg
 template/table/table_rest_37.jpg
+=======
+IAM_Words*
+template*
+>>>>>>> Stashed changes
