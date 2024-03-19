@@ -3,11 +3,10 @@ import TableExtractor as te
 import TableLinesRemover as tlr
 import cv2
 
-path_to_image = "tableDetection/image/testdataset.png"
+path_to_image = "tableDetection/image/test_500000261553.png"
 table_extractor = te.TableExtractor(path_to_image)
 perspective_corrected_image = table_extractor.execute()
 cv2.imshow("perspective_corrected_image", perspective_corrected_image)
-
 
 lines_remover = tlr.TableLinesRemover(perspective_corrected_image)
 image_without_lines = lines_remover.execute()
