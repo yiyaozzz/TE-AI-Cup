@@ -95,6 +95,6 @@ cv2.imshow("Show a word", roiWord)
 
 
 cv2.imshow("Show the words", img)
-cv2.imwrite("c:/temp/segmentedBook.png", img)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
