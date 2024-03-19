@@ -3,7 +3,7 @@ import numpy as np
 
 # Set image path
 path = ""
-fileName = "img6.png"
+fileName = "img7.png"
 
 # Read Input image
 inputImage = cv2.imread(path+fileName)
@@ -36,8 +36,8 @@ for _, c in enumerate(contours):
 
     # Set minimum area and size thresholds
     minArea = 8
-    minWidth = 5
-    minHeight = 5
+    minWidth = 8
+    minHeight = 8
 
     # Filter blobs by area and size:
     if rectArea > minArea and rectWidth >= minWidth and rectHeight >= minHeight:
