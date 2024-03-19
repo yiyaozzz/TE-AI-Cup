@@ -76,13 +76,5 @@ def process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_cro
 # Function to be called from ocr_model.py
 def process_and_crop_pdf(pdf_path, header_dir, table_dir, first_image_crop_lines, rest_image_crop_line):
     output_dirs = (header_dir, table_dir)
-    process_images(pdf_path, output_dirs, first_image_crop_lines, rest_image_crop_line)
-
-<<<<<<< Updated upstream
-=======
-# Crop lines for the first image and the rest of the images
-first_image_crop_lines = (540, 1330)
-rest_image_crop_line = (220, 1390)
->>>>>>> Stashed changes
-
-   
+    process_images(pdf_path, output_dirs,
+                   first_image_crop_lines, rest_image_crop_line)
