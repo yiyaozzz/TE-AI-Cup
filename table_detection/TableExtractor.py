@@ -50,7 +50,7 @@ class TableExtractor:
         self.inverted_image = cv2.bitwise_not(self.thresholded_image)
 
     def dilate_image(self):
-        self.dilated_image = cv2.dilate(self.inverted_image, None, iterations=5)
+        self.dilated_image = cv2.dilate(self.inverted_image, None, iterations=1)
 
     def find_contours(self):
         self.contours, self.hierarchy = cv2.findContours(self.dilated_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
