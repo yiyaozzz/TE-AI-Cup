@@ -1,3 +1,5 @@
 .DS_Store
 archive*
 IAM*
+__pycache__/format_correction.cpython-311.pyc
+__pycache__/tempMatch_format_correction.cpython-311.pyc
