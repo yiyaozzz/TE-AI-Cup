@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import csv
-
+import os
 try:
     from PIL import Image
 except ImportError:
@@ -69,28 +69,38 @@ contours, hierarchy = cv2.findContours(
     img_vh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
-def sort_contours(cnts, method="left-to-right"):
-    # initialize the reverse flag and sort index
-    reverse = False
-    i = 0
-    # handle if we need to sort in reverse
-    if method == "right-to-left" or method == "bottom-to-top":
-        reverse = True
-    # handle if we are sorting against the y-coordinate rather than
-    # the x-coordinate of the bounding box
-    if method == "top-to-bottom" or method == "bottom-to-top":
-        i = 1
-    # construct the list of bounding boxes and sort them from top to
-    # bottom
+def sort_contours(cnts, method="top-to-bottom"):
+    # Sorting helper function based on method
+    reverse = True if method in ["right-to-left", "bottom-to-top"] else False
+    i = 1 if method in ["top-to-bottom", "bottom-to-top"] else 0
     boundingBoxes = [cv2.boundingRect(c) for c in cnts]
-    (cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
-                                        key=lambda b: b[1][i], reverse=reverse))
-    # return the list of sorted contours and bounding boxes
-    return (cnts, boundingBoxes)
+    cnts, boundingBoxes = zip(
+        *sorted(zip(cnts, boundingBoxes), key=lambda b: b[1][i], reverse=reverse))
+    return cnts, boundingBoxes
 
 
-# Sort all the contours by top to bottom.
-contours, boundingBoxes = sort_contours(contours, method="top-to-bottom")
+# Sort contours
+contours, boundingBoxes = sort_contours(contours, "top-to-bottom")
+
+# Group contours into rows based on their y-coordinate
+rows = []
+current_row = []
+prev_y = -1
+mean_height = np.mean([h for _, _, _, h in boundingBoxes])
+
+for cnt in contours:
+    x, y, w, h = cv2.boundingRect(cnt)
+
+    # Adjust mean threshold as necessary
+    if prev_y == -1 or abs(y - prev_y) < mean_height:
+        current_row.append(cnt)
+    else:
+        rows.append(current_row)
+        current_row = [cnt]
+    prev_y = y
+if current_row:  # Add the last row
+    rows.append(current_row)
+
 
 # Creating a list of heights for all detected boxes
 heights = [boundingBoxes[i][3] for i in range(len(boundingBoxes))]
@@ -193,11 +203,34 @@ for i in range(len(finalboxes)):
                         erosion, config='--psm 3')
                 inner = inner + " " + out
             outer.append(inner)
+output_folder = "./cropped_cells"  # Folder where cropped images will be saved
+# Create the folder if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)
 
+
+def crop_and_save_cells(rows, img):
+    # Skipping the first row if it's headers
+    for row_idx, row in enumerate(rows[1:], start=1):
+        for cell_idx, cnt in enumerate(row):
+            x, y, w, h = cv2.boundingRect(cnt)
+            cropped_cell = img[y:y+h, x:x+w]
+            # Save the cropped image
+            filename = f"cropped_row{row_idx}_cell{cell_idx}.png"
+            cv2.imwrite(filename, cropped_cell)
+            print(f"Saved: {filename}")
+
+
+# Print the number of rows and columns excluding the first row
+crop_and_save_cells(rows, img)
+
+
+# For each row, print the number of columns (cells)
+for i, row in enumerate(finalboxes[1:], start=2):  # Start from the second row
+    print(f"Row {i} has {len(row)} columns")
 # Creating a dataframe of the generated OCR list
 arr = np.array(outer)
 dataframe = pd.DataFrame(arr.reshape(len(row), countcol))
 print(dataframe)
 data = dataframe.style.set_properties(align="left")
 # Converting it in a excel-file
-data.to_excel("output.xlsx")
+data.to_excel("/Users/marius/Desktop/output.xlsx")
