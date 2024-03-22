@@ -6,3 +6,5 @@ temp/VGG16_test2.h5
 temp/VGG16_test3.h5
 temp/VGG16.h5
 VGG16.h5
+table_detection/ocr_slices
+table_detection/process_images
