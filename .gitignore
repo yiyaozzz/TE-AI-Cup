@@ -1,5 +1,8 @@
 .DS_Store
 archive*
 IAM*
-__pycache__/format_correction.cpython-311.pyc
-__pycache__/tempMatch_format_correction.cpython-311.pyc
+datasets*
+temp/VGG16_test2.h5
+temp/VGG16_test3.h5
+temp/VGG16.h5
+VGG16.h5
