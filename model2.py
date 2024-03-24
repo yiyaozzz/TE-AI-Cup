@@ -15,16 +15,20 @@ from keras.models import Sequential
 import cv2
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
-
+import os
+from keras.optimizers import Adam
 
 train_path = 'datasets/train'
 valid_path = 'datasets/test'
 test_path = 'datasets/val'
 
+train_labels = sorted(os.listdir('datasets/train'))
+val_labels = sorted(os.listdir('datasets/val'))
+
 IMAGE_SIZE = [224, 224]  # size for VGG16
 
 folders = glob('datasets/train/*')
-
+labels_list = list(train_labels)
 # EW ||||
 
 
@@ -61,18 +65,23 @@ def custom_preprocessing_function(img):
     img_processed = preprocess_input(img_processed)
     return img_processed
 
-
 # List for labels
 # Keras model
 # shear and zoom
 # Add more variations to imadedatagen
 # number of itts
 #
+
+
 train_datagen = ImageDataGenerator(
     preprocessing_function=custom_preprocessing_function,
+    rescale=1./255,
     shear_range=0.2,
     zoom_range=0.2,
-    horizontal_flip=False
+    horizontal_flip=True,  # Changed to True to allow flips
+    rotation_range=20,  # Rotate images slightly
+    width_shift_range=0.2,  # Shift the image widthwise
+    height_shift_range=0.2  # Shift the image heightwise
 )
 
 validation_datagen = ImageDataGenerator(
@@ -103,65 +112,59 @@ test_set = test_datagen.flow_from_directory('datasets/test',
                                             target_size=(224, 224),
                                             batch_size=32,
                                             class_mode='categorical')
-vgg13_custom = Sequential([
-    Conv2D(64, (3, 3), activation='relu',
-           padding='same', input_shape=(224, 224, 3)),
-    Conv2D(64, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D((2, 2)),
 
-    Conv2D(128, (3, 3), activation='relu', padding='same'),
-    Conv2D(128, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D((2, 2)),
-
-    Conv2D(256, (3, 3), activation='relu', padding='same'),
-    Conv2D(256, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D((2, 2)),
-
-    Conv2D(512, (3, 3), activation='relu', padding='same'),
-    Conv2D(512, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D((2, 2)),
-
-    Conv2D(512, (3, 3), activation='relu', padding='same'),
-    Conv2D(512, (3, 3), activation='relu', padding='same'),
-    MaxPooling2D((2, 2)),
-
-    Flatten(),
-    Dense(256, activation='relu'),
-    Dropout(0.5),
-    Dense(2, activation='softmax')   # Output layer
-])
-# # Training with Imagenet weights
-# vgg = VGG16(input_shape=IMAGE_SIZE + [3],
-#             weights='imagenet', include_top=False)
-
-# # This sets the base that the layers are not trainable.
-# for layer in vgg.layers:
-#     layer.trainable = False
+print("Training set class indices:", training_set.class_indices)
+print("Validation set class indices:", validation_set.class_indices)
+print("Test set class indices:", test_set.class_indices)
 
 
-# x = Flatten()(vgg.output)  # Output obtained on vgg16 is now flattened.
-# x = Dense(256, activation='relu')(x)
-# x = Dropout(0.5)(x)
-# prediction = Dense(len(folders), activation='softmax')(x)
+# Training with Imagenet weights
+vgg = VGG16(input_shape=IMAGE_SIZE + [3],
+            weights='imagenet', include_top=False)
+
+# This sets the base that the layers are not trainable.
+for layer in vgg.layers:
+    layer.trainable = False
 
 
-# # Creating model object
-# model = Model(inputs=vgg.input, outputs=prediction)
-# model.summary()
+# Custom top layers
+x = Flatten()(vgg.output)
+x = Dense(256, activation='relu')(x)
+x = Dropout(0.5)(x)
+prediction = Dense(len(folders), activation='softmax')(x)
 
-# Compile the model
-vgg13_custom.compile(loss='categorical_crossentropy',
-                     optimizer='adam', metrics=['accuracy'])
+# Creating model object
+model = Model(inputs=vgg.input, outputs=prediction)
+
+# Compile the model with a custom learning rate
+model.compile(loss='categorical_crossentropy',
+              optimizer=Adam(learning_rate=1e-4),
+              metrics=['accuracy'])
+class_weights = compute_class_weight(
+    'balanced',
+    classes=np.unique(training_set.classes),
+    y=training_set.classes
+)
+
+class_weight_dict = dict(enumerate(class_weights))
+
+
+# # Compile the model
+# vgg.compile(loss='categorical_crossentropy',
+#             optimizer='adam', metrics=['accuracy'])
 # classes = np.unique(training_set.classes)
 # class_weights = compute_class_weight(
 #     'balanced', classes=classes, y=training_set.classes)
 # class_weight_dict = dict(zip(classes, class_weights))
+# Use this in model.fit
+history = model.fit(training_set,
+                    validation_data=validation_set,
+                    epochs=11,
+                    batch_size=32,
+                    class_weight=class_weight_dict)
 
-# Fit the model using class weights
-history = vgg13_custom.fit(training_set,
-                           validation_data=validation_set,
-                           epochs=11,
-                           batch_size=32)
+
+model.summary()
 
 
 # loss
@@ -179,4 +182,4 @@ plt.show()
 plt.savefig('AccVal_acc')
 
 
-vgg13_custom.save('VGG16.h5')
+model.save('VGG16.h5')
