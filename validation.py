@@ -1,40 +1,48 @@
 from keras.models import load_model
-from keras.preprocessing import image
+from keras.applications.vgg16 import preprocess_input
 import numpy as np
 import cv2
-
-# Path to your saved model
-model_path = 'VGG16.h5'
-# Load the trained model
-model = load_model(model_path)
-
-# Function to preprocess the image
 
 
 def preprocess_image(image_path):
     img = cv2.imread(image_path)
-    # Resize the image to match model's expected input shape
-    img = cv2.resize(img, (224, 224))
-    img = img / 255.0  # Scale pixel values to [0, 1]
-    img = np.expand_dims(img, axis=0)  # Add batch dimension
-    return img
+
+    desired_size = 224
+    old_size = img.shape[:2]  # old_size is in (height, width) format
+
+    ratio = float(desired_size)/max(old_size)
+    new_size = tuple([int(x*ratio) for x in old_size])
+
+    img = cv2.resize(img, (new_size[1], new_size[0]))
+
+    new_img = np.zeros((desired_size, desired_size, 3), dtype=np.uint8)
+    x_offset = (desired_size - new_size[1]) // 2
+    y_offset = (desired_size - new_size[0]) // 2
+
+    new_img[y_offset:y_offset+new_size[0], x_offset:x_offset+new_size[1]] = img
+
+    new_img = preprocess_input(new_img.astype('float32'))
+    new_img = np.expand_dims(new_img, axis=0)  # Add batch dimension
+
+    return new_img
 
 
-# Replace 'path_to_your_image.jpg' with the path to the image you want to predict
-image_path = 'datasets/test/DISC/disc.png'
+model_path = 'VGG16.h5'
+model = load_model(model_path)
+
+image_path = 'datasets/test/EW/ew.png'
+
 img = preprocess_image(image_path)
 
-# Make a prediction
 predictions = model.predict(img)
+print(predictions)
 
-# Assuming your model outputs a softmax vector
-predicted_class = np.argmax(predictions, axis=1)
+predicted_class_index = np.argmax(predictions, axis=0)[1]
 predicted_probability = np.max(predictions)
 
-# If you have the class labels as a list (from earlier when you printed class indices)
-# example class names, replace with your actual class names
-labels_list = ['DISC', 'EW']
 
-# Print the prediction
+labels_list = ['Class1', 'Class2']
+
+
 print(
-    f"Predicted class: {labels_list[predicted_class[0]]} with probability {predicted_probability:.2f}")
+    f"Predicted class: {labels_list[predicted_class_index]} with probability {predicted_probability:.2f}")
