@@ -21,7 +21,6 @@ thresh, img_bin = cv2.threshold(
 # inverting the image
 img_bin = 255-img_bin
 cv2.imwrite('cv_inverted.png', img_bin)
-# Plotting the image to see the output
 plotting = plt.imshow(img_bin, cmap='gray')
 plt.show()
 

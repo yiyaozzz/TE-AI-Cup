@@ -17,6 +17,8 @@ from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 import os
 from keras.optimizers import Adam
+from keras.preprocessing.image import img_to_array, load_img
+
 from keras import backend as K
 
 
@@ -49,7 +51,7 @@ def preprocess_image(img):
 
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset +
             new_size[1]] = img
-    # print("Final image size:", new_img.shape)
+    print("Final image size:", new_img.shape)
 
     return new_img
 
@@ -66,6 +68,7 @@ def custom_preprocessing_function(img):
 # Add more variations to imadedatagen
 # number of itts
 #
+# Define a function to visualize the original and augmented images
 
 
 train_datagen = ImageDataGenerator(
@@ -119,12 +122,14 @@ vgg = VGG16(input_shape=IMAGE_SIZE + [3],
 for layer in vgg.layers:
     if 'block5' in layer.name:
         layer.trainable = True
+    elif 'block4' in layer.name:
+        layer.trainable = True
     else:
         layer.trainable = False
 
 x = Flatten()(vgg.output)
 x = Dense(256, activation='relu')(x)
-x = Dropout(0.2)(x)
+x = Dropout(0.5)(x)
 prediction = Dense(len(folders), activation='softmax')(x)
 
 
@@ -155,7 +160,7 @@ def f1_m(y_true, y_pred):
 # METRIC CLOSE
 model.compile(loss='categorical_crossentropy',
               optimizer=Adam(learning_rate=1e-4),
-              metrics=['accuracy', f1_m, precision_m, recall_m])
+              metrics=['accuracy'])
 class_weights = compute_class_weight(
     'balanced',
     classes=np.unique(training_set.classes),
