@@ -2,6 +2,21 @@ from keras.models import load_model
 from keras.applications.resnet50 import preprocess_input
 import numpy as np
 import cv2
+import os
+
+
+def process_images_in_directory(directory_path):
+    images = []
+    for filename in os.listdir(directory_path):
+        if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+            img_path = os.path.join(directory_path, filename)
+            processed_img = preprocess_image(img_path)
+            images.append(processed_img)
+
+    if not images:
+        raise Exception("No images found in the directory")
+
+    return np.vstack(images)
 
 
 def preprocess_image(image_path):
@@ -10,7 +25,7 @@ def preprocess_image(image_path):
         raise Exception(f"Image not found at {image_path}")
 
     desired_size = 224
-    old_size = img.shape[:2]  # old_size is in (height, width) format
+    old_size = img.shape[:2]
     ratio = float(desired_size)/max(old_size)
     new_size = tuple([int(x*ratio) for x in old_size])
     img = cv2.resize(img, (new_size[1], new_size[0]))
@@ -21,23 +36,26 @@ def preprocess_image(image_path):
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset+new_size[1]] = img
 
     new_img = preprocess_input(new_img.astype('float32'))
-    new_img = np.expand_dims(new_img, axis=0)  # Add batch dimension
+    new_img = np.expand_dims(new_img, axis=0)
 
     return new_img
 
 
-model_path = 'ResNet50TempWrok.h5'
+model_path = 'VGG16.h5'
 model = load_model(model_path)
+directory_path = 'datasets/val/EW'
+image_path = process_images_in_directory(directory_path)
 
-image_path = 'datasets/test/DISC/disc.png'
 
-img = preprocess_image(image_path)
+img = image_path
 
 predictions = model.predict(img)
-predicted_class_index = np.argmax(predictions, axis=1)[0]
-predicted_probability = np.max(predictions)
+predicted_class_index = np.argmax(predictions, axis=1)
+predicted_probability = np.max(predictions, axis=1)
 
-labels_list = ['DISC', 'EW']  # Ensure this matches your training labels
+labels_list = ['DISC', 'EW']
 
-print(
-    f"Predicted class: {labels_list[predicted_class_index]} with probability {predicted_probability:.2f}")
+for i, predicted_class_index in enumerate(predicted_class_index):
+    print(
+        f"Image {i}: Predicted class: {labels_list[predicted_class_index]} with probability {predicted_probability[i]:.2f}"
+    )

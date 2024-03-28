@@ -18,10 +18,16 @@ import numpy as np
 import os
 from keras.optimizers import Adam
 from keras.preprocessing.image import img_to_array, load_img
-
+from sklearn.decomposition import PCA
+from keras.models import Model
+import numpy as np
+import cv2
+from sklearn.metrics import classification_report, accuracy_score
+import numpy as np
 from keras import backend as K
 
-
+# use vgg13 and remove the col 32, 32, 1
+# vgg13, pca, classifier
 train_path = 'datasets/train'
 valid_path = 'datasets/test'
 test_path = 'datasets/val'
@@ -51,7 +57,7 @@ def preprocess_image(img):
 
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset +
             new_size[1]] = img
-    print("Final image size:", new_img.shape)
+    # print("Final image size:", new_img.shape)
 
     return new_img
 
@@ -69,6 +75,9 @@ def custom_preprocessing_function(img):
 # number of itts
 #
 # Define a function to visualize the original and augmented images
+
+# Noise add noise
+# Change light intensity
 
 
 train_datagen = ImageDataGenerator(
@@ -89,11 +98,6 @@ validation_datagen = ImageDataGenerator(
 test_datagen = ImageDataGenerator(
     preprocessing_function=custom_preprocessing_function
 )
-
-train_datagen = ImageDataGenerator(
-    rescale=1./255, shear_range=0.2, zoom_range=0.2, horizontal_flip=False)
-validation_datagen = ImageDataGenerator(rescale=1./255)
-test_datagen = ImageDataGenerator(rescale=1./255)
 
 
 training_set = train_datagen.flow_from_directory('datasets/train',
@@ -172,7 +176,7 @@ class_weight_dict = dict(enumerate(class_weights))
 #
 history = model.fit(training_set,
                     validation_data=validation_set,
-                    epochs=20,
+                    epochs=11,
                     batch_size=32,
                     class_weight=class_weight_dict)
 
@@ -194,5 +198,31 @@ plt.legend()
 plt.show()
 plt.savefig('AccVal_acc')
 
+feature_model = Model(inputs=model.input, outputs=model.layers[-2].output)
+features = feature_model.predict(training_set)
 
-model.save('VGG16.h5')
+pca = PCA(n_components=50).fit(training_set)
+pca_features = pca.fit_transform(features)
+
+val_loss, val_accuracy = model.evaluate(validation_set)
+print(f"Validation Loss: {val_loss}")
+print(f"Validation Accuracy: {val_accuracy}")
+
+
+predictions = model.predict(validation_set)
+predicted_classes = np.argmax(predictions, axis=1)
+
+
+true_classes = validation_set.classes
+
+
+class_labels = list(validation_set.class_indices.keys())
+
+
+print(classification_report(true_classes,
+      predicted_classes, target_names=class_labels))
+
+
+overall_accuracy = accuracy_score(true_classes, predicted_classes)
+print(f"Overall Validation Accuracy: {overall_accuracy:.2f}")
+# model.save('VGG16.h5')
