@@ -16,5 +16,7 @@ cv2.imshow("image_without_lines", image_without_lines)
 ocr_tool = ottt.OcrToTableTool(image_without_lines, perspective_corrected_image)
 ocr_tool.execute()
 
+cv2.imshow("Updated Image with Columns Masked", ocr_tool.original_image)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()

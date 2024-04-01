@@ -144,4 +144,15 @@ class TableExtractor:
         path = "./process_images/table_extractor/" + file_name
         cv2.imwrite(path, image)
         
+    def remove_columns(self, col_widths, cols_to_remove):
+        img = self.image_without_lines_noise_removed
+        cumulative_width = 0
+        for i, width in enumerate(col_widths):
+            if i in cols_to_remove:
+                start_x = cumulative_width
+                end_x = start_x + width
+                img[:, start_x:end_x] = 255 
+            cumulative_width += width
+        return img
+        
         
