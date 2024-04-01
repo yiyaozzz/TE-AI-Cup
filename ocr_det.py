@@ -87,10 +87,6 @@ def four_point_transform(image, pts):
     heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
     maxHeight = max(int(heightA), int(heightB))
 
-    # Now that we have the dimensions of the new image, construct
-    # the set of destination points to obtain a "birds eye view",
-    # (i.e. top-down view) of the image, again specifying points
-    # in the top-left, top-right, bottom-right, and bottom-left order
     dst = np.array([
         [0, 0],
         [maxWidth - 1, 0],
@@ -101,12 +97,9 @@ def four_point_transform(image, pts):
     M = cv2.getPerspectiveTransform(rect, dst)
     img = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 
-    # Return the warped image
     return img
 
 
-
-# Read your file
 file = 'img4.png'
 original_img = cv2.imread(file)
 #img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
@@ -118,32 +111,25 @@ thresh, img_bin = cv2.threshold(
 # inverting the image
 img_bin = 255-img_bin
 cv2.imwrite('cv_inverted.png', img_bin)
-# Plotting the image to see the output
 plotting = plt.imshow(img_bin, cmap='gray')
 plt.show()
 
 # countcol(width) of kernel as 100th of total width
 kernel_len = np.array(img).shape[1]//100
-# Defining a vertical kernel to detect all vertical lines of image
 ver_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_len))
-# Defining a horizontal kernel to detect all horizontal lines of image
 hor_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_len, 1))
-# A kernel of 2x2
 kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
 
 # Use vertical kernel to detect and save the vertical lines in a jpg
 image_1 = cv2.erode(img_bin, ver_kernel, iterations=3)
 vertical_lines = cv2.dilate(image_1, ver_kernel, iterations=3)
 cv2.imwrite("vertical.jpg", vertical_lines)
-# Plot the generated image
 plotting = plt.imshow(image_1, cmap='gray')
 plt.show()
 
-# Use horizontal kernel to detect and save the horizontal lines in a jpg
 image_2 = cv2.erode(img_bin, hor_kernel, iterations=3)
 horizontal_lines = cv2.dilate(image_2, hor_kernel, iterations=3)
 cv2.imwrite("horizontal.jpg", horizontal_lines)
-# Plot the generated image
 plotting = plt.imshow(image_2, cmap='gray')
 plt.show()
 
@@ -156,7 +142,6 @@ thresh, img_vh = cv2.threshold(
 cv2.imwrite("img_vh.jpg", img_vh)
 bitxor = cv2.bitwise_xor(img, img_vh)
 bitnot = cv2.bitwise_not(bitxor)
-# Plotting the generated image
 plotting = plt.imshow(bitnot, cmap='gray')
 plt.show()
 
