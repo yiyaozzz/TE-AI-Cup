@@ -3,6 +3,8 @@ from keras.applications.resnet50 import preprocess_input
 import numpy as np
 import cv2
 import os
+from keras.preprocessing.image import ImageDataGenerator
+import math
 
 
 def process_images_in_directory(directory_path):
@@ -12,9 +14,6 @@ def process_images_in_directory(directory_path):
             img_path = os.path.join(directory_path, filename)
             processed_img = preprocess_image(img_path)
             images.append(processed_img)
-
-    if not images:
-        raise Exception("No images found in the directory")
 
     return np.vstack(images)
 
@@ -36,6 +35,11 @@ def preprocess_image(image_path):
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset+new_size[1]] = img
 
     new_img = preprocess_input(new_img.astype('float32'))
+    # new_img = new_img ./255
+    new_w = int(img.shape[1] * .255)
+    new_h = int(img.shape[0] * .255)
+    dime = (new_w, new_h)
+    # final_img = cv2.resize(new_img, dime, interpolation=cv2.INTER_AREA)
     new_img = np.expand_dims(new_img, axis=0)
 
     return new_img
@@ -43,19 +47,31 @@ def preprocess_image(image_path):
 
 model_path = 'VGG16.h5'
 model = load_model(model_path)
-directory_path = 'datasets/val/EW'
-image_path = process_images_in_directory(directory_path)
+directory_path = 'datasets/test'
+# img = process_images_in_directory(directory_path)
+test_generator = ImageDataGenerator(rescale=1./255)
+test_data_generator = test_generator.flow_from_directory(directory_path,
+                                                         target_size=(
+                                                             224, 224),
+                                                         batch_size=64,
+                                                         shuffle=False,
+                                                         class_mode="categorical")
+test_steps_per_epoch = np.math.ceil(
+    test_data_generator.samples / test_data_generator.batch_size)
+predictions = model.predict_generator(
+    test_data_generator, steps=test_steps_per_epoch)
 
 
-img = image_path
-
-predictions = model.predict(img)
-predicted_class_index = np.argmax(predictions, axis=1)
-predicted_probability = np.max(predictions, axis=1)
+# predictions = model.predict(img)
+predicted_class_indices = np.argmax(predictions, axis=1)
+predicted_probabilities = np.max(predictions, axis=1)
 
 labels_list = ['DISC', 'EW']
 
-for i, predicted_class_index in enumerate(predicted_class_index):
+print("Predictions 2D Array:")
+print(predictions)  # This will print the entire 2D array of predictions
+
+for i, predicted_class_index in enumerate(predicted_class_indices):
     print(
-        f"Image {i}: Predicted class: {labels_list[predicted_class_index]} with probability {predicted_probability[i]:.2f}"
+        f"Image {i}: Predicted class: {labels_list[predicted_class_index]} with probability {predicted_probabilities[i]:.2f}"
     )

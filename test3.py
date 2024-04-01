@@ -34,7 +34,6 @@ for i, c in enumerate(contours):
     if hierarchy[0][i][3] != -1:  # Check if there's a parent contour
         boundRect = cv2.boundingRect(c)
         rectX, rectY, rectWidth, rectHeight = boundRect
-
         # Estimate the bounding rect area:
         rectArea = rectWidth * rectHeight
 
