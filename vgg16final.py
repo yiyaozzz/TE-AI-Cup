@@ -51,7 +51,7 @@ def preprocess_image(img):
 
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset +
             new_size[1]] = img
-    print("Final image size:", new_img.shape)
+    # print("Final image size:", new_img.shape)
 
     return new_img
 
@@ -166,11 +166,10 @@ class_weights = compute_class_weight(
 )
 
 class_weight_dict = dict(enumerate(class_weights))
-# Resnet
-#
+
 history = model.fit(training_set,
                     validation_data=validation_set,
-                    epochs=20,
+                    epochs=12,
                     batch_size=32,
                     class_weight=class_weight_dict)
 

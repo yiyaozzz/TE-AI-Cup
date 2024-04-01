@@ -66,8 +66,8 @@ predictions = model.predict_generator(
 predicted_class_indices = np.argmax(predictions, axis=1)
 predicted_probabilities = np.max(predictions, axis=1)
 
-labels_list = ['DISC', 'EW']
-
+labels_list = ['1', '2', '3', '4', '5', 'DISC', 'EH', 'EW', 'N_A']
+# {'1': 0, '2': 1, '3': 2, '4': 3, '5': 4, 'DISC': 5, 'EH': 6, 'EW': 7, 'N_A': 8}
 print("Predictions 2D Array:")
 print(predictions)  # This will print the entire 2D array of predictions
 

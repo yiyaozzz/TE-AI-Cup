@@ -10,3 +10,5 @@ table_detection/ocr_slices
 table_detection/process_images
 ResNet50TempWrok.h5
 ResNet50.h5
+dataset_rest*
+VGG16TEST.h5
