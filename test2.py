@@ -3,7 +3,7 @@ import numpy as np
 
 # Set image path
 path = ""
-fileName = "img6.png"
+fileName = "datasets/test/ew/test.png"
 
 # Read Input image
 inputImage = cv2.imread(path+fileName)

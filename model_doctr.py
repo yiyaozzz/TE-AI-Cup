@@ -20,14 +20,11 @@ def run_ocr_on_images(image_paths, model):
 def main(pdf_path, header_dir, table_dir, output_text_path, first_image_crop_lines, rest_image_crop_line):
     os.environ["USE_TORCH"] = "1"
 
-    # Process the PDF and crop it
     process_and_crop_pdf(pdf_path, header_dir, table_dir,
                          first_image_crop_lines, rest_image_crop_line)
 
-    # Initialize OCR model
     model = ocr_predictor(pretrained=True)
 
-    # Define the paths to the images that need OCR
     header_image_path = os.path.join(header_dir, "header.jpg")
     # table_images_paths = [os.path.join(table_dir, filename) for filename in os.listdir(table_dir) if filename.startswith("table")]
 

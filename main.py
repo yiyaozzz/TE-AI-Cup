@@ -120,21 +120,18 @@ def crop_and_save_letter(image, corners, idx):
     x_start, y_start = min(c[0] for c in corners), min(c[1] for c in corners)
     x_end, y_end = max(c[0] for c in corners), max(c[1] for c in corners)
     cropped_img = image[y_start:y_end, x_start:x_end]
-    # Save the cropped image to a temporary file
     temp_filename = f"datasets/letter_{idx}.png"
     cv2.imwrite(temp_filename, cropped_img)
     return temp_filename
 
 
 if __name__ == "__main__":
-    bndingBx = []  # holds bounding box of each countour
+    bndingBx = []
     corners = []
 
     img = cv2.imread('datasets/test/ew/ew.png', 0)  # read image
 
-    # perform gaussian blur (5*5)
     blur = cv2.GaussianBlur(img, (5, 5), 0)
-    # apply adaptive threshold to image
     th3 = cv2.adaptiveThreshold(
         img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     th3 = cv2.bitwise_not(th3)
