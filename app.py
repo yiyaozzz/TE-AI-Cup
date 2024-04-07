@@ -1,25 +1,22 @@
 import streamlit as st
-import subprocess
-import json
-import os
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from main import run_pipeline
+from tempfile import NamedTemporaryFile
 
 st.title('PDF Processing App')
 
 uploaded_file = st.file_uploader("Choose a PDF file", type='pdf')
 if uploaded_file is not None:
-    with TemporaryDirectory() as temp_dir:
-        pdf_path = os.path.join(temp_dir, "uploaded_file.pdf")
-        with open(pdf_path, 'wb') as f:
-            f.write(uploaded_file.getvalue())
+    with NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(uploaded_file.getvalue())
+        temp_pdf_path = tmp.name
 
-        process = subprocess.run(
-            ['python', 'full_pipeline_processor.py', pdf_path, temp_dir], capture_output=True, text=True)
+    if st.button('Process PDF'):
+        try:
+            excel_path = run_pipeline(temp_pdf_path)
 
-        if process.returncode == 0:
-            excel_path = os.path.join(temp_dir, "output.xlsx")
+            st.success('PDF processed successfully.')
             with open(excel_path, "rb") as excel_file:
                 st.download_button(label="Download Excel Output", data=excel_file,
-                                   file_name="output.xlsx", mime="application/vnd.ms-excel")
-        else:
-            st.error("Failed to process PDF")
+                                   file_name="output.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        except Exception as e:
+            st.error(f"Failed to process PDF: {e}")

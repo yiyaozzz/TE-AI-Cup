@@ -35,6 +35,11 @@ folders = glob('datasets/train/*')
 labels_list = list(train_labels)
 # EW ||||
 
+# border pixel value
+
+
+i = 0
+
 
 def preprocess_image(img):
     desired_size = 224
@@ -45,14 +50,20 @@ def preprocess_image(img):
 
     img = cv2.resize(img, (new_size[1], new_size[0]))
 
-    new_img = np.zeros((desired_size, desired_size, 3), dtype=np.uint8)
+    # kern = np.ones((5,5))
+
+    new_img = np.ones((desired_size, desired_size, 3), dtype=np.uint8)*255
     x_offset = (desired_size - new_size[1]) // 2  # Center
     y_offset = (desired_size - new_size[0]) // 2
 
     new_img[y_offset:y_offset+new_size[0], x_offset:x_offset +
             new_size[1]] = img
-    # print("Final image size:", new_img.shape)
+    global i
+    new_file = 'temp' + str(i) + '.jpg'
+    i = i+1
+    save_path = os.path.join('temp', new_file)
 
+    # cv2.imwrite(save_path, new_img)
     return new_img
 
 
@@ -77,20 +88,22 @@ def custom_preprocessing_function(img):
 train_datagen = ImageDataGenerator(
     preprocessing_function=custom_preprocessing_function,
     rescale=1./255,
-    shear_range=0.2,
-    zoom_range=0.2,
+    # shear_range=0.2,
+    # zoom_range=0.2,
     horizontal_flip=False,
-    rotation_range=20,
-    width_shift_range=0.2,
-    height_shift_range=0.2
+    # rotation_range=20,
+    # width_shift_range=0.2,
+    # height_shift_range=0.2
 )
 
 validation_datagen = ImageDataGenerator(
-    preprocessing_function=custom_preprocessing_function
+    preprocessing_function=custom_preprocessing_function,
+    rescale=1./255
 )
 
 test_datagen = ImageDataGenerator(
-    preprocessing_function=custom_preprocessing_function
+    preprocessing_function=custom_preprocessing_function,
+    rescale=1./255
 )
 
 
@@ -157,7 +170,7 @@ def f1_m(y_true, y_pred):
 
 # METRIC CLOSE
 model.compile(loss='categorical_crossentropy',
-              optimizer=Adam(learning_rate=1e-4),
+              optimizer=Adam(learning_rate=1e-5),
               metrics=['accuracy'])
 class_weights = compute_class_weight(
     'balanced',
@@ -169,7 +182,7 @@ class_weight_dict = dict(enumerate(class_weights))
 
 history = model.fit(training_set,
                     validation_data=validation_set,
-                    epochs=12,
+                    epochs=15,
                     batch_size=32,
                     class_weight=class_weight_dict)
 
