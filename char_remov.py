@@ -1,134 +1,116 @@
 import cv2
 import numpy as np
-
-# Read the image
-image_path = "img9.png"
-image = cv2.imread(image_path)
-
-# Convert the image to grayscale
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-# Perform Otsu thresholding to get a binary image
-_, binary_image = cv2.threshold(
-    gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-# Perform distance transform on the binary image
-distance_transform = cv2.distanceTransform(binary_image, cv2.DIST_L2, 5)
-
-# Set a threshold to create a binary image from the distance transform
-_, binary_distance_transform = cv2.threshold(
-    distance_transform, 0.7 * distance_transform.max(), 255, 0)
-
-# Convert the binary distance transform to an 8-bit unsigned integer (0-255)
-binary_distance_transform_uint8 = np.uint8(binary_distance_transform)
-
-# Convert the binary distance transform to a 3-channel image
-binary_distance_transform_3ch = cv2.merge(
-    [binary_distance_transform_uint8] * 3)
-
-# Convert the binary distance transform to the correct datatype for watershed
-markers = np.int32(binary_distance_transform_uint8)
-
-# Perform watershed on the original binary image using the distance transform as the marker
-cv2.watershed(image, markers)
-
-# Create a mask using the watershed markers
-mask = np.uint8(markers)
-
-# Find contours in the mask
-contours, _ = cv2.findContours(
-    mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-# Sort the contours from left to right
-contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0])
-
-# Crop the words based on contours and save them
-cropped_images_paths = []
-
-for idx, contour in enumerate(contours):
-    # Get the bounding box of the contour
-    x, y, w, h = cv2.boundingRect(contour)
-    # Crop the image using the bounding box
-    cropped_image = image[y:y+h, x:x+w]
-    # Save the cropped image
-    cropped_image_path = f"cropped_word_{idx}.png"
-    cv2.imwrite(cropped_image_path, cropped_image)
-    cropped_images_paths.append(cropped_image_path)
-
-image_with_boxes = image.copy()
-
-# Draw the bounding box for each contour
-for contour in contours:
-    x, y, w, h = cv2.boundingRect(contour)
-    cv2.rectangle(image_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-# Since we cannot create pop-up windows in this environment,
-# we will save the image with the drawn bounding boxes and provide it as a download.
-
-# Save the image with the bounding boxes
-boxed_image_path = "image_with_boxes.png"
-cv2.imwrite(boxed_image_path, image_with_boxes)
-
-boxed_image_path
-
-cropped_images_paths
+import os
 
 
-#  import cv2
-# import numpy as np
+def compute_gradient(image):
+    grad_x = cv2.Sobel(image, cv2.CV_32F, 1, 0, ksize=-1)
+    grad_y = cv2.Sobel(image, cv2.CV_32F, 0, 1, ksize=-1)
+    mag = cv2.magnitude(grad_x, grad_y)
+    mag = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    return mag
 
-# # Read the image
-# image_path = "img8.png"
-# image = cv2.imread(image_path)
 
-# # Convert the image to grayscale
-# gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+def find_and_draw_bounding_boxes(img, binary_img):
+    contours, _ = cv2.findContours(
+        binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-# # Threshold the image to get a binary image
-# _, binary_image = cv2.threshold(
-#     gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Collecting bounding boxes for all contours
+    boxes = [cv2.boundingRect(contour) for contour in contours]
 
-# # Define a custom kernel for the morphological operation to connect letters
-# custom_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (27, 5))
+    # Sort boxes by their y-coordinate, then by their x-coordinate
+    boxes.sort(key=lambda x: (x[1], x[0]))
 
-# # Use morphological close operation to connect components/letters in the image
-# connected = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, custom_kernel)
-# morphed_image_path = "morphed_image.png"
-# cv2.imwrite(morphed_image_path, connected)
-# # Find contours in the connected image
+    merged_boxes = merge_boxes_based_on_proximity(
+        boxes, proximity_threshold=5)
+
+    for box in merged_boxes:
+        w, x, y, h = box
+
+        print("x" + str(x))
+        print("w" + str(w))
+        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    return img
+
+
+def merge_boxes_based_on_proximity(boxes, proximity_threshold):
+    merged_boxes = []
+    current_merge = list(boxes[0]) if boxes else None
+
+    for box in boxes[1:]:
+        if current_merge:
+            # Check if the current box is close enough to the merge
+            if box[0] - (current_merge[0] + current_merge[2]) <= proximity_threshold:
+                # Update the current merge to include  box
+                new_width = box[0] + box[2] - current_merge[0]
+                current_merge[2] = new_width  # Update width
+                # Update height if necessary
+                current_merge[3] = max(current_merge[3], box[3])
+            else:
+                # If not close, add the current merge to merged_boxes and start a new merge
+                merged_boxes.append(tuple(current_merge))
+                current_merge = list(box)
+        else:
+            current_merge = list(box)
+
+    # Add the last merge if it exists
+    if current_merge:
+        merged_boxes.append(tuple(current_merge))
+
+    return merged_boxes
+
+
+def morphological_operations(binary_img):
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, int(4)))
+    dilated = cv2.dilate(binary_img, kernel, iterations=1)
+
+    # vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 2))
+    # eroded = cv2.erode(dilated, vertical_kernel, iterations=1)
+
+    return dilated
+
+
+# def find_and_draw_bounding_boxes(img, binary_img):
+#     contours, _ = cv2.findContours(
+#         binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+#     for contour in contours:
+#         x, y, w, h = cv2.boundingRect(contour)
+#         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+#     return img
+
+
+img = cv2.imread('img11.png')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
+gray_blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+test = compute_gradient(gray_blurred)
+
+_, binary_img = cv2.threshold(gray_blurred, 177, 255, cv2.THRESH_BINARY_INV)
+
+morphed_img = morphological_operations(binary_img)
+
 # contours, _ = cv2.findContours(
-#     connected, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-# # Sort the contours from left to right
-# contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0])
-
-# # Crop the words based on contours and save them
-# cropped_images_paths = []
-
-# for idx, contour in enumerate(contours):
-#     # Get the bounding box of the contour
-#     x, y, w, h = cv2.boundingRect(contour)
-#     # Crop the image using the bounding box
-#     cropped_image = image[y:y+h, x:x+w]
-#     # Save the cropped image
-#     cropped_image_path = f"cropped_word_{idx}.png"
-#     cv2.imwrite(cropped_image_path, cropped_image)
-#     cropped_images_paths.append(cropped_image_path)
-
-# image_with_boxes = image.copy()
-
-# # Draw the bounding box for each contour
+#     morphed_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+# img_with_boxes = img.copy()
 # for contour in contours:
 #     x, y, w, h = cv2.boundingRect(contour)
-#     cv2.rectangle(image_with_boxes, (x, y), (x + w, y + h), (0, 255, 0), 2)
+#     cv2.rectangle(img_with_boxes, (x, y), (x+w, y+h), (0, 255, 0), 2)
+img_with_boxes_before = img.copy()
+find_and_draw_bounding_boxes(img_with_boxes_before, binary_img)
+img_with_boxes_after = img.copy()
+find_and_draw_bounding_boxes(img_with_boxes_after, morphed_img)
 
-# # Since we cannot create pop-up windows in this environment,
-# # we will save the image with the drawn bounding boxes and provide it as a download.
 
-# # Save the image with the bounding boxes
-# boxed_image_path = "image_with_boxes.png"
-# cv2.imwrite(boxed_image_path, image_with_boxes)
+cv2.imshow('Original Image', img)
+cv2.imshow('Thresholded Image', binary_img)
+cv2.imshow('REmove', morphed_img)
+# cv2.imshow('Words Bounded', img_with_boxes)
+cv2.imshow('Bounding Boxes Before Merging', img_with_boxes_before)
+cv2.imshow('Bounding Boxes After Merging', img_with_boxes_after)
 
-# boxed_image_path
-
-# cropped_images_paths
+cv2.waitKey(0)
+cv2.destroyAllWindows()
