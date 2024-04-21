@@ -150,11 +150,10 @@ def process_input_file(file):
     img = erase_barcodes_from_image(img)  # First erase barcodes
     # Then extract and transform the largest table
     img = extract_and_transform_largest_table(img)
-    '''
+
     # Show Largest Table Being Extracted
-    cv2.imshow("largest image", img)
-    cv2.waitKey(0)
-    '''
+    # cv2.imshow("largest image", img)
+    # cv2.waitKey(0)
 
     # Convert to grayscale for further processing
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -170,12 +169,12 @@ def process_input_file(file):
     # Apply morphological operations
     image_1 = cv2.erode(img_bin, ver_kernel, iterations=3)
     vertical_lines = cv2.dilate(image_1, ver_kernel, iterations=4)
-    cv2.imshow("vertical_lines", image_1)
-    cv2.waitKey(0)
+    # cv2.imshow("vertical_lines", image_1)
+    # cv2.waitKey(0)
     image_2 = cv2.erode(img_bin, hor_kernel, iterations=1)
     horizontal_lines = cv2.dilate(image_2, hor_kernel, iterations=4)
-    cv2.imshow("horizontal_lines", image_2)
-    cv2.waitKey(0)
+    # cv2.imshow("horizontal_lines", image_2)
+    # cv2.waitKey(0)
 
     img_vh = cv2.addWeighted(vertical_lines, 0.5, horizontal_lines, 0.5, 0.0)
     img_vh = cv2.erode(~img_vh, kernel, iterations=4)
@@ -193,7 +192,7 @@ def process_input_file(file):
     min_width = 70
     min_height = 20
     # Ignore the Operation Details Cell
-    # max_width = 500
+    max_width = 500
     filtered_contours_img = img.copy()
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
@@ -201,8 +200,8 @@ def process_input_file(file):
             filtered_contours.append(cnt)
             cv2.rectangle(filtered_contours_img, (x, y),
                           (x + w, y + h), (0, 0, 255), 2)
-    cv2.imshow("Filtered Contours", filtered_contours_img)
-    cv2.waitKey(0)
+    # cv2.imshow("Filtered Contours", filtered_contours_img)
+    # cv2.waitKey(0)
 
     contours, bounding_boxes = sort_contours(
         filtered_contours, "top-to-bottom")
@@ -287,5 +286,5 @@ def take_input(image):
 
 
 # Testing
-image = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000294400_pages/page_3.png'
-take_input(image)
+# image = '500000294400_pages/page_3.png'
+# take_input(image)

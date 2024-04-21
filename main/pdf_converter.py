@@ -11,11 +11,16 @@ def convert_pdf_to_png(pdf_path, dpi=230):
     num_pages_to_process = min(doc.page_count, 17)
 
     for page_num in range(num_pages_to_process):
+        if page_num in [1, 3, 4]:
+            continue
+
         page = doc.load_page(page_num)
         pix = page.get_pixmap(dpi=dpi)
         output_file = os.path.join(output_dir, f"page_{page_num + 1}.png")
+
         pix.save(output_file)
         image_paths.append(output_file)
 
     doc.close()
+
     return image_paths
