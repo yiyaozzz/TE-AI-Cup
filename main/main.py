@@ -54,6 +54,6 @@ def process_pdf_or_folder(input_data, is_file=False):
                     print(column_path)
                     process_images_in_folder(column_path)
                     print(column_path)
-                    track_object(column_path)
+                    track_object(column_path, column_name)
 
     return "All PDFs have been processed."

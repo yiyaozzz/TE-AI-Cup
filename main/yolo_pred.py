@@ -1,10 +1,9 @@
 import os
-import shutil
 import re
 from ultralytics import YOLO
 
-# Initialize YOLO model
-model = YOLO('model/best2.pt')
+
+model = YOLO('model/best2.pt')  # Adjust path as necessary
 
 
 def get_page_from_path(image_path):
@@ -16,11 +15,11 @@ def get_page_from_path(image_path):
     return None
 
 
-# Set up output directory
+# Global variables
 output_dir = "finalOutput"
 os.makedirs(output_dir, exist_ok=True)
 
-track_counter = 3
+track_counter = 0
 
 
 def track_object(source_path):
@@ -34,43 +33,29 @@ def track_object(source_path):
     page_output_dir = os.path.join(output_dir, page_dir)
     os.makedirs(page_output_dir, exist_ok=True)
 
-    track_counter += 1  # Ensure this logic is correct for your use case
+    # Increment the track counter for this session
+    track_counter += 1
 
-    # Default output path for YOLOv5 is typically 'runs/detect/exp'
-    # We track objects using YOLO
+    # Define the output filename within the appropriate directory
+    output_filename = os.path.join(
+        page_output_dir, f"cell_{track_counter}.png")
+
+    # Run the tracking model
     results = model.track(
         source=source_path,
         tracker="bytetrack.yaml",
         conf=0.2,
         show=False,
-        save=True,
+        save=False,
         save_crop=True,
         save_conf=False,
-        iou=0.5
+        iou=0.5,
+        # This should reflect in the saving behavior of the model
+        name=f'track_{track_counter}'
     )
 
-    # Find the last created directory within 'runs/detect' which contains the results
-    # Adjust if your path is different
-    default_save_path = os.path.join('runs', 'detect')
-    try:
-        latest_run_dir = max([os.path.join(default_save_path, d)
-                             for d in os.listdir(default_save_path)], key=os.path.getmtime)
-        # Move all files from the latest run directory to your specified directory
-        for filename in os.listdir(latest_run_dir):
-            source_file = os.path.join(latest_run_dir, filename)
-            destination_file = os.path.join(
-                page_output_dir, f"cell_{track_counter}_{filename}")
-            shutil.move(source_file, destination_file)
-        shutil.rmtree(latest_run_dir)  # Clean up the original directory
-    except Exception as e:
-        print(f"Error in handling YOLO output files: {e}")
-
-    # Reset counter logic if necessary
-    if track_counter == 4:
-        track_counter = 3
-
+    # Additional handling if specific actions are needed with results
     return results
 
 
-# Example usage
-track_object("path/to/your/image/file.jpg")
+track_object("500000294405_pages/page_2.png")

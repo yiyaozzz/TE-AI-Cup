@@ -43,7 +43,17 @@ def extract_and_transform_largest_table(image):
     thresh = cv2.threshold(
         gray, 128, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     contours, _ = cv2.findContours(
-        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.imshow("Thresholded", thresh)
+    # cv2.waitKey(0)
+
+    ''' 
+    # Show Drawing Contours
+    image_with_contours = image.copy()    
+    cv2.drawContours(image_with_contours, contours, -1, (0, 255, 0), 3)
+    cv2.imshow("Contours", image_with_contours)
+    cv2.waitKey(0)
+    '''
 
     best_cnt = None
     max_area = 0
@@ -53,8 +63,7 @@ def extract_and_transform_largest_table(image):
         x, y, w, h = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
         aspect_ratio = w / float(h)
-
-        if aspect_ratio > 1.5 and area > 750:
+        if aspect_ratio > 1.5 and area > 600:
             if area > max_area:
                 max_area = area
                 best_cnt = cnt
@@ -63,8 +72,18 @@ def extract_and_transform_largest_table(image):
     if best_cnt is not None:
         rect = cv2.minAreaRect(best_cnt)
         box = cv2.boxPoints(rect)
-        box = np.int0(box)
+        box = np.intp(box)
         rect_ordered = order_points(box)
+
+        '''
+        # Visual confirmation of the detected table outline
+        image_copy = image.copy()
+        cv2.polylines(image_copy, [np.int32(rect_ordered)], isClosed=True, color=(0, 255, 0), thickness=5)
+        cv2.imshow("Detected Table Outline", image_copy)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
+        '''
 
         (tl, tr, br, bl) = rect_ordered
         widthA = np.linalg.norm(br - bl)
@@ -73,7 +92,6 @@ def extract_and_transform_largest_table(image):
         heightA = np.linalg.norm(tr - br)
         heightB = np.linalg.norm(tl - bl)
         max_height = max(int(heightA), int(heightB))
-
         dst = np.array([
             [0, 0],
             [max_width - 1, 0],
@@ -83,6 +101,9 @@ def extract_and_transform_largest_table(image):
 
         M = cv2.getPerspectiveTransform(rect_ordered, dst)
         warped = cv2.warpPerspective(image, M, (max_width, max_height))
+
+        # cv2.imshow("Warped Image", warped)
+        # cv2.waitKey(0)
         return warped
 
     return image
@@ -129,15 +150,17 @@ def process_input_file(file):
     img = erase_barcodes_from_image(img)  # First erase barcodes
     # Then extract and transform the largest table
     img = extract_and_transform_largest_table(img)
-    # cv2.imshow("image", img)
-    # cv2.waitKey(0)
+    '''
+    # Show Largest Table Being Extracted
+    cv2.imshow("largest image", img)
+    cv2.waitKey(0)
+    '''
 
     # Convert to grayscale for further processing
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     thresh, img_bin = cv2.threshold(
         img_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     img_bin = 255 - img_bin  # Inverting the image
-
     # Further image processing
     kernel_len = np.array(img).shape[1]//100
     ver_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_len))
@@ -145,13 +168,19 @@ def process_input_file(file):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 2))
 
     # Apply morphological operations
-    image_1 = cv2.erode(img_bin, ver_kernel, iterations=4)
+    image_1 = cv2.erode(img_bin, ver_kernel, iterations=3)
     vertical_lines = cv2.dilate(image_1, ver_kernel, iterations=4)
-    image_2 = cv2.erode(img_bin, hor_kernel, iterations=4)
+    cv2.imshow("vertical_lines", image_1)
+    cv2.waitKey(0)
+    image_2 = cv2.erode(img_bin, hor_kernel, iterations=1)
     horizontal_lines = cv2.dilate(image_2, hor_kernel, iterations=4)
+    cv2.imshow("horizontal_lines", image_2)
+    cv2.waitKey(0)
 
     img_vh = cv2.addWeighted(vertical_lines, 0.5, horizontal_lines, 0.5, 0.0)
     img_vh = cv2.erode(~img_vh, kernel, iterations=4)
+    cv2.imshow("img_vh", img_vh)
+    cv2.waitKey(0)
     thresh, img_vh = cv2.threshold(
         img_vh, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
@@ -161,10 +190,10 @@ def process_input_file(file):
     filtered_contours = []
     # Filter out noise cells
     min_area = 300
-    min_width = 25
-    min_height = 10
+    min_width = 70
+    min_height = 20
     # Ignore the Operation Details Cell
-    max_width = 300
+    max_width = 500
     filtered_contours_img = img.copy()
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
@@ -172,8 +201,8 @@ def process_input_file(file):
             filtered_contours.append(cnt)
             cv2.rectangle(filtered_contours_img, (x, y),
                           (x + w, y + h), (0, 0, 255), 2)
-    # cv2.imshow("Filtered Contours", filtered_contours_img)
-    # cv2.waitKey(0)
+    cv2.imshow("Filtered Contours", filtered_contours_img)
+    cv2.waitKey(0)
 
     contours, bounding_boxes = sort_contours(
         filtered_contours, "top-to-bottom")
@@ -206,7 +235,7 @@ def process_input_file(file):
     file_name_without_ext = os.path.splitext(os.path.basename(file))[0]
     individual_file_folder = os.path.join(base_folder, file_name_without_ext)
     os.makedirs(individual_file_folder, exist_ok=True)
-    for row_idx, row in enumerate(rows, start=2):
+    for row_idx, row in enumerate(rows[1:], start=2):
         row_folder = os.path.join(individual_file_folder, f"row_{row_idx}")
         os.makedirs(row_folder, exist_ok=True)
         column_contours, _ = sort_contours(row, "left-to-right")
@@ -236,3 +265,8 @@ def take_input(image):
     """
     process_input_file(image)
     print("Executed")
+
+
+# Testing
+image = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000294400_pages/page_3.png'
+take_input(image)
