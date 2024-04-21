@@ -5,8 +5,8 @@ import numpy as np
 def display_image(window_name, image):
     """Displays an image until a key is pressed."""
     cv2.imshow(window_name, image)
-    cv2.waitKey(0)  # Wait for a key press to continue
-    cv2.destroyAllWindows()
+    # cv2.waitKey(0)  # Wait for a key press to continue
+    # cv2.destroyAllWindows()
 
 
 def isolate_high_contrast_areas(image):

@@ -43,7 +43,17 @@ def extract_and_transform_largest_table(image):
     thresh = cv2.threshold(
         gray, 128, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     contours, _ = cv2.findContours(
-        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.imshow("Thresholded", thresh)
+    # cv2.waitKey(0)
+
+    ''' 
+    # Show Drawing Contours
+    image_with_contours = image.copy()    
+    cv2.drawContours(image_with_contours, contours, -1, (0, 255, 0), 3)
+    cv2.imshow("Contours", image_with_contours)
+    cv2.waitKey(0)
+    '''
 
     best_cnt = None
     max_area = 0
@@ -53,8 +63,7 @@ def extract_and_transform_largest_table(image):
         x, y, w, h = cv2.boundingRect(cnt)
         area = cv2.contourArea(cnt)
         aspect_ratio = w / float(h)
-
-        if aspect_ratio > 1.5 and area > 750:
+        if aspect_ratio > 1.5 and area > 600:
             if area > max_area:
                 max_area = area
                 best_cnt = cnt
@@ -63,8 +72,18 @@ def extract_and_transform_largest_table(image):
     if best_cnt is not None:
         rect = cv2.minAreaRect(best_cnt)
         box = cv2.boxPoints(rect)
-        box = np.int0(box)
+        box = np.intp(box)
         rect_ordered = order_points(box)
+
+        '''
+        # Visual confirmation of the detected table outline
+        image_copy = image.copy()
+        cv2.polylines(image_copy, [np.int32(rect_ordered)], isClosed=True, color=(0, 255, 0), thickness=5)
+        cv2.imshow("Detected Table Outline", image_copy)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        
+        '''
 
         (tl, tr, br, bl) = rect_ordered
         widthA = np.linalg.norm(br - bl)
@@ -73,7 +92,6 @@ def extract_and_transform_largest_table(image):
         heightA = np.linalg.norm(tr - br)
         heightB = np.linalg.norm(tl - bl)
         max_height = max(int(heightA), int(heightB))
-
         dst = np.array([
             [0, 0],
             [max_width - 1, 0],
@@ -83,6 +101,9 @@ def extract_and_transform_largest_table(image):
 
         M = cv2.getPerspectiveTransform(rect_ordered, dst)
         warped = cv2.warpPerspective(image, M, (max_width, max_height))
+
+        # cv2.imshow("Warped Image", warped)
+        # cv2.waitKey(0)
         return warped
 
     return image
@@ -115,116 +136,6 @@ def sort_contours(contours, method="top-to-bottom"):
 
 
 def process_input_file(file):
-    """
-    The function `process_input_file` reads an image file, erases barcodes, extracts the largest table,
-    performs image processing operations, filters contours, sorts contours, groups contours into rows
-    and columns, and saves each cell as an image file.
-
-    :param file: The `file` parameter in the `process_input_file` function is the path to the input
-    image file that you want to process. This function reads the image from the specified file, performs
-    various image processing operations to extract and transform tables, and then extracts individual
-    cells from the tables for further processing
-    """
-    img = cv2.imread(file)
-    img = erase_barcodes_from_image(img)  # First erase barcodes
-    # Then extract and transform the largest table
-    img = extract_and_transform_largest_table(img)
-    # cv2.imshow("image", img)
-    # cv2.waitKey(0)
-
-    # Convert to grayscale for further processing
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    thresh, img_bin = cv2.threshold(
-        img_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    img_bin = 255 - img_bin  # Inverting the image
-
-    # Further image processing
-    kernel_len = np.array(img).shape[1]//100
-    ver_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_len))
-    hor_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_len, 1))
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 2))
-
-    # Apply morphological operations
-    image_1 = cv2.erode(img_bin, ver_kernel, iterations=4)
-    vertical_lines = cv2.dilate(image_1, ver_kernel, iterations=4)
-    image_2 = cv2.erode(img_bin, hor_kernel, iterations=4)
-    horizontal_lines = cv2.dilate(image_2, hor_kernel, iterations=4)
-
-    img_vh = cv2.addWeighted(vertical_lines, 0.5, horizontal_lines, 0.5, 0.0)
-    img_vh = cv2.erode(~img_vh, kernel, iterations=4)
-    thresh, img_vh = cv2.threshold(
-        img_vh, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-
-    # Find and sort contours for cell extraction
-    contours, _ = cv2.findContours(
-        img_vh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    filtered_contours = []
-    # Filter out noise cells
-    min_area = 300
-    min_width = 25
-    min_height = 10
-    # Ignore the Operation Details Cell
-    max_width = 300
-    filtered_contours_img = img.copy()
-    for cnt in contours:
-        x, y, w, h = cv2.boundingRect(cnt)
-        if cv2.contourArea(cnt) > min_area and w > min_width and h > min_height and w < max_width:
-            filtered_contours.append(cnt)
-            cv2.rectangle(filtered_contours_img, (x, y),
-                          (x + w, y + h), (0, 0, 255), 2)
-    # cv2.imshow("Filtered Contours", filtered_contours_img)
-    # cv2.waitKey(0)
-
-    contours, bounding_boxes = sort_contours(
-        filtered_contours, "top-to-bottom")
-
-    # Group contours into rows and columns
-    rows = []
-    current_row = []
-    prev_y = -1
-    # Store center of the previous contour
-    prev_center = None
-
-    for contour, box in zip(contours, bounding_boxes):
-        x, y, w, h = box
-        # Calculate center of the current contour
-        center = (x + w // 2, y + h // 2)
-        # Adjust this threshold for distance between center and next row
-        if prev_y == -1 or abs(center[1] - prev_center[1]) < h * 0.2:
-            current_row.append(contour)
-        else:
-            rows.append(current_row)
-            current_row = [contour]
-        prev_y = y
-        prev_center = center
-
-    # Add the last row
-    if current_row:
-        rows.append(current_row)
-    # Crop and save each cell
-    base_folder = "./tempTables"
-    file_name_without_ext = os.path.splitext(os.path.basename(file))[0]
-    individual_file_folder = os.path.join(base_folder, file_name_without_ext)
-    os.makedirs(individual_file_folder, exist_ok=True)
-    for row_idx, row in enumerate(rows, start=1):
-        row_folder = os.path.join(individual_file_folder, f"row_{row_idx}")
-        os.makedirs(row_folder, exist_ok=True)
-        column_contours, _ = sort_contours(row, "left-to-right")
-        # Specify columns to save
-        columns_to_save = [1, 2, 3, 4]
-        for cell_idx, cnt in enumerate(column_contours):
-            if cell_idx + 1 in columns_to_save:
-                x, y, w, h = cv2.boundingRect(cnt)
-                column_folder = os.path.join(
-                    row_folder, f"column_{cell_idx+1}")
-                os.makedirs(column_folder, exist_ok=True)
-                cropped_cell = img[y:y+h, x:x+w]
-                filename = os.path.join(
-                    column_folder, f"cell_{cell_idx+1}.png")
-                cv2.imwrite(filename, cropped_cell)
-                print(f"Saved: {filename}")
-    # /tempTables/production5000pg/rows
-# def process_input_file(file):
     """
     The function `process_input_file` reads an image file, erases barcodes, extracts the largest table,
     performs image processing operations, filters contours, sorts contours, groups contours into rows
@@ -282,11 +193,11 @@ def process_input_file(file):
     min_width = 70
     min_height = 20
     # Ignore the Operation Details Cell
-    # max_width = 500
+    max_width = 500
     filtered_contours_img = img.copy()
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
-        if cv2.contourArea(cnt) > min_area and w > min_width and h > min_height:
+        if cv2.contourArea(cnt) > min_area and w > min_width and h > min_height and w < max_width:
             filtered_contours.append(cnt)
             cv2.rectangle(filtered_contours_img, (x, y),
                           (x + w, y + h), (0, 0, 255), 2)
@@ -304,62 +215,44 @@ def process_input_file(file):
     prev_center = None
 
     for contour, box in zip(contours, bounding_boxes):
-        x, y, w, h = cv2.boundingRect(contour)
+        x, y, w, h = box
         # Calculate center of the current contour
         center = (x + w // 2, y + h // 2)
         # Adjust this threshold for distance between center and next row
         if prev_y == -1 or abs(center[1] - prev_center[1]) < h * 0.2:
-            current_row.append((contour, box))
+            current_row.append(contour)
         else:
             rows.append(current_row)
-            current_row = [(contour, box)]
+            current_row = [contour]
         prev_y = y
         prev_center = center
-    if current_row:  # Add the last row
+
+    # Add the last row
+    if current_row:
         rows.append(current_row)
-
-    # Calculate average cell size in column 3
-    column_3_sizes = [cv2.boundingRect(cnt)[2] * cv2.boundingRect(cnt)[3]
-                      for row in rows for cnt, box in row if 'column_3' in cv2.boundingRect(cnt)]
-    avg_area_column_3 = sum(column_3_sizes) / \
-        len(column_3_sizes) if column_3_sizes else 0
-
-    # Set a threshold as a fraction of the average area to filter out small cells
-    area_threshold_factor = 0.5  # Example: 50% of the average area
-    area_threshold = avg_area_column_3 * area_threshold_factor
-
     # Crop and save each cell
     base_folder = "./tempTables"
     file_name_without_ext = os.path.splitext(os.path.basename(file))[0]
     individual_file_folder = os.path.join(base_folder, file_name_without_ext)
     os.makedirs(individual_file_folder, exist_ok=True)
-
     for row_idx, row in enumerate(rows[1:], start=2):
-        column_contours, _ = sort_contours(
-            [cnt[0] for cnt in row], "left-to-right")
-        for cell_idx, (cnt, box) in enumerate(zip(column_contours, _)):
-            x, y, w, h = box
-            cell_area = w * h
-
-            if cell_idx + 1 in [1, 2, 4]:  # Process columns 1, 2, and 4 as usual
+        row_folder = os.path.join(individual_file_folder, f"row_{row_idx}")
+        os.makedirs(row_folder, exist_ok=True)
+        column_contours, _ = sort_contours(row, "left-to-right")
+        # Specify columns to save
+        columns_to_save = [1, 2, 3, 4]
+        for cell_idx, cnt in enumerate(column_contours):
+            if cell_idx + 1 in columns_to_save:
+                x, y, w, h = cv2.boundingRect(cnt)
                 column_folder = os.path.join(
-                    individual_file_folder, f"row_{row_idx}", f"column_{cell_idx+1}")
+                    row_folder, f"column_{cell_idx+1}")
                 os.makedirs(column_folder, exist_ok=True)
                 cropped_cell = img[y:y+h, x:x+w]
                 filename = os.path.join(
                     column_folder, f"cell_{cell_idx+1}.png")
                 cv2.imwrite(filename, cropped_cell)
                 print(f"Saved: {filename}")
-            # For column 3, check against the dynamic area threshold
-            elif cell_idx + 1 == 3 and cell_area >= area_threshold:
-                column_folder = os.path.join(
-                    individual_file_folder, f"row_{row_idx}", "column_3")
-                os.makedirs(column_folder, exist_ok=True)
-                cropped_cell = img[y:y+h, x:x+w]
-                filename = os.path.join(
-                    column_folder, f"cell_{cell_idx+1}.png")
-                cv2.imwrite(filename, cropped_cell)
-                print(f"Saved: {filename}")
+    # /tempTables/production5000pg/rows
 
 
 def take_input(image):
@@ -372,3 +265,8 @@ def take_input(image):
     """
     process_input_file(image)
     print("Executed")
+
+
+# Testing
+# image = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000294400_pages/page_3.png'
+# take_input(image)
