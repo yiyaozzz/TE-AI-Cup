@@ -16,3 +16,5 @@ dataset_rest*
 temp*
 VGG16TEST@.h5
 data*
+runs*
+finalOutput*

@@ -1,23 +1,18 @@
 from keras.models import load_model
 import numpy as np
-import pandas as pd
 from glob import glob
-import keras
 import matplotlib.pyplot as plt
 from keras.layers import Input, Lambda, Dense, Flatten, Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
 from keras.applications.vgg16 import VGG16
-from keras.applications.vgg19 import VGG19
 from keras.preprocessing import image
 from keras.preprocessing.image import ImageDataGenerator
-from keras.models import Sequential
 import cv2
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 import os
 from keras.optimizers import Adam
-from keras.preprocessing.image import img_to_array, load_img
 from keras import backend as K
 
 # use vgg13 and remove the col 32, 32, 1
@@ -127,20 +122,57 @@ print("Validation set class indices:", validation_set.class_indices)
 print("Test set class indices:", test_set.class_indices)
 
 
-vgg = VGG16(input_shape=IMAGE_SIZE + [3],
-            weights='imagenet', include_top=False)
+def VGG13(input_shape, num_classes):
+    # Define the input
+    inputs = Input(shape=input_shape)
 
-for layer in vgg.layers:
-    if 'block5' in layer.name:
-        layer.trainable = True
-    elif 'block4' in layer.name:
-        layer.trainable = True
-    else:
-        layer.trainable = False
+    # Block 1
+    x = Conv2D(64, (3, 3), activation='relu', padding='same')(inputs)
+    x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
 
-x = Flatten()(vgg.output)
-x = Dense(256, activation='relu')(x)
-x = Dropout(0.5)(x)
+    # Block 2
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # Block 3
+    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(256, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # Block 4
+    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # Block 5
+    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)
+    x = Conv2D(512, (3, 3), activation='relu', padding='same')(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # Classification block
+    x = Flatten()(x)
+    x = Dense(4096, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    x = Dense(4096, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    x = Dense(num_classes, activation='softmax')(x)
+
+    # Create model
+    model = Model(inputs, x)
+    return model
+
+
+vgg = VGG13(input_shape=[224, 224, 3], num_classes=len(folders))
+
+x = vgg.output
+remove_layer = {'block3_conv3', 'block4_conv3', 'block5_conv3'}
+
+
+# x = Flatten()(x)
+# x = Dense(256, activation='relu')(x)
+# x = Dropout(0.5)(x)
 prediction = Dense(len(folders), activation='softmax')(x)
 
 

@@ -3,14 +3,29 @@ import numpy as np
 import os
 
 
-img = cv2.imread('img10.png')
+img = cv2.imread('Cells/cropped_row2_cell5.png')
+
+
+def make_border_white(img, border_size=1):
+    # Set top and bottom border to white
+    img[:border_size, :] = 255
+    img[-border_size:, :] = 255
+
+    # Set left and right border to white
+    img[:, :border_size] = 255
+    img[:, -border_size:] = 255
+
+    return img
+
+
+img = make_border_white(img, border_size=1)
 
 
 def thresholding(image):
     img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    ret, thresh = cv2.threshold(img_gray, 170, 255, cv2.THRESH_BINARY_INV)
-    thresh = cv2.GaussianBlur(thresh, (7, 7), 0)
-    ret, thresh = cv2.threshold(thresh, 100, 255, cv2.THRESH_BINARY)
+    ret, thresh = cv2.threshold(img_gray, 200, 255, cv2.THRESH_BINARY_INV)
+    thresh = cv2.GaussianBlur(thresh, (5, 5), 0)
+    ret, thresh = cv2.threshold(thresh, 70, 255, cv2.THRESH_BINARY)
     # 100, 255
     return thresh
 
@@ -39,7 +54,7 @@ for row in contoursRows:
 sortedLinesArray = sorted(linesArray, key=lambda line: line[1])
 
 # 4.9 val
-kernelWords = np.ones((int(4.9), int(7)), np.uint8)
+kernelWords = np.ones((int(4.9), int(3)), np.uint8)
 dilateWordsImg = cv2.dilate(thresh_img, kernelWords, iterations=1)
 cv2.imshow("dilate Words Img", dilateWordsImg)
 img_with_bounds = img.copy()

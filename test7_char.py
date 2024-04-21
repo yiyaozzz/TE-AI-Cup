@@ -1,72 +1,60 @@
 import cv2
 import numpy as np
-from scipy.stats import mode
-from sklearn.cluster import DBSCAN
+import os
 
 
-def adaptive_dilation(image, initial_thresh):
-    contours, _ = cv2.findContours(
-        initial_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return initial_thresh
+def apply_morphology(img):
+    # Create horizontal kernel and apply morphological operations
+    kernel_width = np.ones((1, 6), np.uint8)  # More width emphasis
+    kernel_height = np.ones((6, 1), np.uint8)  # More height emphasis
 
-    heights = [cv2.boundingRect(c)[3] for c in contours]
-    if heights:
-        # find the most common height
-        common_height = mode(heights)[0][0]
-        # Scale the kernel based on common height
-        kernel_height = max(2, int(common_height * 0.7))
-    else:
-        kernel_height = 5  # Default if no valid mode found
+    # Morphological closing (dilate followed by erode)
+    closing_img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel_width)
 
-    # Slightly wider kernel
-    kernel = np.ones(
-        (kernel_height, max(2, int(kernel_height * 0.8))), np.uint8)
-    dilated = cv2.dilate(initial_thresh, kernel, iterations=1)
-    cv2.imshow('Result', dilated)
-    cv2.waitKey(0)
-    return dilated
+    # Morphological opening (erode followed by dilate)
+    opening_img = cv2.morphologyEx(closing_img, cv2.MORPH_OPEN, kernel_height)
+
+    return opening_img
 
 
-def draw_bounding_boxes(image_path, eps, min_samples):
-    image = cv2.imread(image_path)
-    if image is None:
-        print("Error: Image not found.")
-        return
+def make_border_white(img, border_size=1):
+    # Set top and bottom border to white
+    img[:border_size, :] = 255
+    img[-border_size:, :] = 255
 
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(
-        gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    binary = adaptive_dilation(image, binary)
+    # Set left and right border to white
+    img[:, :border_size] = 255
+    img[:, -border_size:] = 255
 
-    contours, _ = cv2.findContours(
-        binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    bounding_boxes = [cv2.boundingRect(c) for c in contours]
-    bounding_boxes.sort(key=lambda x: (x[1], x[0]))
-
-    centroids = np.array([(x + w/2, y + h/2)
-                         for (x, y, w, h) in bounding_boxes])
-    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(centroids)
-    labels = clustering.labels_
-
-    unique_labels = set(labels)
-    for label in unique_labels:
-        if label == -1:
-            continue
-        class_member_mask = (labels == label)
-        rect_coords = [bounding_boxes[i]
-                       for i in range(len(bounding_boxes)) if class_member_mask[i]]
-        if rect_coords:
-            x_min, y_min = np.min(rect_coords, axis=0)[0:2]
-            x_max, y_max = np.max(rect_coords, axis=0)[
-                0:2] + np.max(rect_coords, axis=0)[2:4]
-            cv2.rectangle(image, (x_min, y_min),
-                          (x_max, y_max), (0, 255, 0), 2)
-
-    cv2.imshow('Result', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    return img
 
 
-# Example usage
-draw_bounding_boxes('img9.png', eps=12, min_samples=1)
+# Load the image and convert it to grayscale
+img = cv2.imread('Cells/cropped_row2_cell5.png', cv2.IMREAD_GRAYSCALE)
+img = make_border_white(img, border_size=1)
+
+# Apply thresholding
+_, thresh_img = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY_INV)
+thresh_img = cv2.GaussianBlur(thresh_img, (5, 5), 0)
+_, thresh_img = cv2.threshold(thresh_img, 70, 255, cv2.THRESH_BINARY)
+
+# Apply morphology
+morph_img = apply_morphology(thresh_img)
+cv2.imshow("Morphological Processing", morph_img)
+
+# Define contours and bounding boxes for further processing
+contours, hierarchy = cv2.findContours(
+    morph_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+bounding_boxes = [cv2.boundingRect(c)
+                  for c in contours if cv2.contourArea(c) > 500]
+# Sort by y coordinate
+bounding_boxes = sorted(bounding_boxes, key=lambda x: x[1])
+
+# Visualize bounding boxes
+img_with_bounds = img.copy()
+for x, y, w, h in bounding_boxes:
+    cv2.rectangle(img_with_bounds, (x, y), (x + w, y + h), (0, 255, 0), 2)
+cv2.imshow("Words with Bounding Boxes", img_with_bounds)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()

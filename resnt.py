@@ -3,13 +3,20 @@ from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
+from PIL import Image
+
 # Define transformations
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor()
 ])
+# transform = transforms.Compose([
+#     transforms.Pad((0, 0, 224, 224), fill=(
+#         255, 255, 255), padding_mode='constant'),
+#     transforms.CenterCrop((224, 224)),
+#     transforms.ToTensor()
+# ])
 
-# Load datasets
 train_dataset = datasets.ImageFolder('datasets/train', transform=transform)
 val_dataset = datasets.ImageFolder('datasets/val', transform=transform)
 
@@ -28,7 +35,7 @@ model.fc = nn.Linear(num_ftrs, len(train_dataset.classes)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.002, momentum=0.9)
+optimizer = optim.SGD(model.parameters(), lr=0.003, momentum=0.9)
 
 # Training loop
 model.train()
@@ -52,4 +59,4 @@ with torch.no_grad():
         correct += (predicted == labels).sum().item()
 
 print(f'Accuracy: {100 * correct / total}%')
-torch.save(model.state_dict(), 'resnet_complete.pth')
+torch.save(model.state_dict(), 'resnet_tally.pth')
