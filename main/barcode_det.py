@@ -20,7 +20,7 @@ def isolate_high_contrast_areas(image):
     # display_image("Threshold Image", thresh)
 
     # Morphological closing to bridge gaps in barcode lines
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 15))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 25))
     closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
     # display_image("Morphologically Closed Image", closed)
 
@@ -86,19 +86,17 @@ def erase_barcodes_from_image(image):
         x, y, w, h = rect
         if w > 99 and h > 5:  # Filter contours based on size
             cv2.rectangle(image, (x - margin, y - margin),
-                          (x + w - margin, y + h + margin), (255, 255, 255), -1)
-    # display_image('Image without Barcodes', image)
+                          (x + w+2, y + h + margin), (255, 255, 255), -1)
     return image
 
 
-"""
+'''
 # Testing with image loading
 if __name__ == "__main__":
-    img_path = 'img4.png'
+    img_path = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000294405_pages/page_10.png'
     img = cv2.imread(img_path)
     img_without_barcodes = erase_barcodes_from_image(img)
     cv2.imshow('Image without Barcodes', img_without_barcodes)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-"""
+'''
