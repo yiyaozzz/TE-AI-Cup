@@ -18,11 +18,13 @@ def get_page_from_path(image_path):
 # Global variables
 output_dir = "finalOutput"
 os.makedirs(output_dir, exist_ok=True)
-
+# in image path
+# if page_ exists then os.join(output_dir, "String = page_{i}"), os.makedirs(output_dr, exist_ok=True)
 track_counter = 0
 
 
 def track_object(source_path):
+    print("PATH" + source_path)
     global track_counter
 
     page_dir = get_page_from_path(source_path)
@@ -46,11 +48,10 @@ def track_object(source_path):
         tracker="bytetrack.yaml",
         conf=0.2,
         show=False,
-        save=False,
+        save=True,
         save_crop=True,
         save_conf=False,
         iou=0.5,
-        # This should reflect in the saving behavior of the model
         name=f'track_{track_counter}'
     )
 
@@ -58,4 +59,4 @@ def track_object(source_path):
     return results
 
 
-# track_object("500000294405_pages/page_2.png")
+# track_object("tempTables/page_9/row_3/column_4/cell_4.png")
