@@ -2,7 +2,7 @@ import fitz  # PyMuPDF
 import os
 
 
-def convert_pdf_to_png(pdf_path, dpi=250):
+def convert_pdf_to_png(pdf_path, dpi=300):
     doc = fitz.open(pdf_path)
     output_dir = f"{os.path.splitext(pdf_path)[0]}_pages"
     os.makedirs(output_dir, exist_ok=True)

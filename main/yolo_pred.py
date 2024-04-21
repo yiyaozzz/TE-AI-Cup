@@ -58,4 +58,4 @@ def track_object(source_path):
     return results
 
 
-track_object("500000294405_pages/page_2.png")
+# track_object("500000294405_pages/page_2.png")
