@@ -4,6 +4,7 @@ from ocr_det import take_input
 from tt import process_images_in_folder
 from firstWord import detect_first_word
 from yolo_pred import track_object
+import time
 
 
 def process_pdf_or_folder(input_data, is_file=False):
@@ -29,7 +30,8 @@ def process_pdf_or_folder(input_data, is_file=False):
                     take_input(image_path)
 
     # After all images are processed, handle based on columns
-    tempTables_path = os.path.join(os.getcwd(), "tempTables")
+    tempTables_path = "tempTables"
+
     if not os.path.exists(tempTables_path):
         print("No tempTables directory found.")
         return
@@ -51,9 +53,12 @@ def process_pdf_or_folder(input_data, is_file=False):
                         detect_first_word(image)
                 elif column_name in ["column_3", "column_4"]:
                     # Process the whole folder
+                    print(
+                        f"Processing folder for object tracking: {column_name}")
                     print(column_path)
+
                     process_images_in_folder(column_path)
-                    print(column_path)
+                    # time.sleep(5)
                     track_object(column_path)
 
     return "All PDFs have been processed."

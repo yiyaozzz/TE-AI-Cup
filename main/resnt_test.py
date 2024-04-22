@@ -4,7 +4,7 @@ from torchvision import transforms, models
 from PIL import Image
 import cv2
 
-# Transform definition
+
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor()
@@ -18,9 +18,7 @@ model_path = 'resnet_tally.pth'
 
 # Load trained model
 model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-model.eval()  # Set the model to evaluation mode
-
-# Preprocess the image for model prediction
+model.eval()
 
 
 def preprocess_image(image):
@@ -48,19 +46,22 @@ def white_border(img, border_size):
 
 
 # Image path
-image_path = 'runs/detect/track18/crops/Words-and-tallys/cell_45.jpg'
-img = cv2.imread(image_path)  # Load image
-if img is None:
-    print("Failed to load image")
-else:
-    img = white_border(img, 1)  # Apply white border
-    cv2.imwrite("YoloDataset.jpg", img)  # Save the modified image
+# image_path = 'runs/detect/track18/crops/Words-and-tallys/cell_45.jpg'
 
-    image_tensor = preprocess_image(img)
-    predicted_class_index = predict_image(image_tensor)
 
-    # Class names
-    # 'N/A', 'Scratch',
-    class_names = ['TALLY 1', 'TALLY 2', 'TALLY 3', 'TALLY 4', 'TALLY 5']
-    print(
-        f'Predicted class for the input image is: {class_names[predicted_class_index]}')
+def resnetPred(image_path):
+    img = cv2.imread(image_path)  # Load image
+    if img is None:
+        print("Failed to load image")
+    else:
+        img = white_border(img, 1)
+
+        image_tensor = preprocess_image(img)
+        predicted_class_index = predict_image(image_tensor)
+
+        # Class names
+        # 'N/A', 'Scratch',
+        class_names = ['TALLY 1', 'TALLY 2', 'TALLY 3', 'TALLY 4', 'TALLY 5']
+        print(
+            f'Predicted class for the input image is: {class_names[predicted_class_index]}')
+        return class_names[predicted_class_index]

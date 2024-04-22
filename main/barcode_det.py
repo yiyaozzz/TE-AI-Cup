@@ -64,7 +64,6 @@ def erase_barcodes(image_path):
 # Example usage
 erase_barcodes('img4.png')
 """
-# Function that can call from another script
 
 
 def erase_barcodes_from_image(image):
