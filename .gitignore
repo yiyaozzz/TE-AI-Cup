@@ -18,3 +18,4 @@ VGG16TEST@.h5
 data*
 runs*
 finalOutput*
+yolov8n.pt

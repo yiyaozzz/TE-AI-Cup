@@ -1,62 +1,61 @@
-import os
-import re
 from ultralytics import YOLO
+import cv2
+from ultralytics.utils.plotting import Annotator
+import os
+
+model = YOLO('model/best2.pt')
 
 
-model = YOLO('model/best2.pt')  # Adjust path as necessary
+image_path = 'tempTables/page_9/row_3/column_4/cell_4.png'
+img = cv2.imread(image_path)
 
 
-def get_page_from_path(image_path):
-    path_parts = image_path.split(os.sep)
-    page_pattern = re.compile(r'^page_\d+$')
-    for part in path_parts:
-        if page_pattern.match(part):
-            return part
-    return None
+results = model.predict(img, conf=0.2, iou=0.5)
+
+detections = []
+for r in results:
+    boxes = r.boxes
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        label = model.names[int(box.cls)]
+        detections.append((x1, y1, x2, y2, label))
 
 
-# Global variables
-output_dir = "finalOutput"
+def get_row(y, rows, threshold=10):
+    for idx, row in enumerate(rows):
+        for _, row_y1, _, row_y2, _ in row:
+            if abs(row_y1 - y) <= threshold or abs(row_y2 - y) <= threshold:
+                return idx
+    return -1
+
+
+rows = []
+
+for det in sorted(detections, key=lambda x: (x[1], x[0])):
+    idx = get_row(det[1], rows)
+    if idx == -1:
+        rows.append([det])
+    else:
+        rows[idx].append(det)
+
+
+output_dir = 'output_images'
 os.makedirs(output_dir, exist_ok=True)
-# in image path
-# if page_ exists then os.join(output_dir, "String = page_{i}"), os.makedirs(output_dr, exist_ok=True)
-track_counter = 0
 
+# Save each detection, organized by row
+file_index = 1
+for row in rows:
+    for x1, y1, x2, y2, label in sorted(row, key=lambda x: x[0]):
+        cropped_img = img[y1:y2, x1:x2]
+        filename = f"{file_index}_{label}.jpg"
+        cv2.imwrite(os.path.join(output_dir, filename), cropped_img)
+        file_index += 1
 
-def track_object(source_path):
-    print("PATH" + source_path)
-    global track_counter
-
-    page_dir = get_page_from_path(source_path)
-    if not page_dir:
-        print("Page directory not found in the path.")
-        return None
-
-    page_output_dir = os.path.join(output_dir, page_dir)
-    os.makedirs(page_output_dir, exist_ok=True)
-
-    # Increment the track counter for this session
-    track_counter += 1
-
-    # Define the output filename within the appropriate directory
-    output_filename = os.path.join(
-        page_output_dir, f"cell_{track_counter}.png")
-
-    # Run the tracking model
-    results = model.track(
-        source=source_path,
-        tracker="bytetrack.yaml",
-        conf=0.2,
-        show=False,
-        save=True,
-        save_crop=True,
-        save_conf=False,
-        iou=0.5,
-        name=f'track_{track_counter}'
-    )
-
-    # Additional handling if specific actions are needed with results
-    return results
-
-
-# track_object("tempTables/page_9/row_3/column_4/cell_4.png")
+annotator = Annotator(img)
+for row in rows:
+    for x1, y1, x2, y2, label in row:
+        annotator.box_label([x1, y1, x2, y2], label)
+annotated_img = annotator.result()
+cv2.imshow('YOLO V8 Detection', annotated_img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
