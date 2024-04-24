@@ -158,28 +158,61 @@ def process_input_file(file):
     # Convert to grayscale for further processing
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     thresh, img_bin = cv2.threshold(
-        img_gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        img_gray, 120, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     img_bin = 255 - img_bin  # Inverting the image
     # Further image processing
-    kernel_len = np.array(img).shape[1]//100
+    kernel_len = np.array(img).shape[1]//80
     ver_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, kernel_len))
-    hor_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_len, 1))
+    hor_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (70, 1))
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 2))
 
     # Apply morphological operations
-    image_1 = cv2.erode(img_bin, ver_kernel, iterations=3)
+    #Vertical Line
+    image_1 = cv2.erode(img_bin, ver_kernel, iterations=2)
     vertical_lines = cv2.dilate(image_1, ver_kernel, iterations=4)
-    # cv2.imshow("vertical_lines", image_1)
-    # cv2.waitKey(0)
+    #cv2.imshow("vertical_lines", image_1)
+    #cv2.waitKey(0)
+    #Filter out Smaller verticle line
+    # Connected Components to Filter Lines Based on Height
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(vertical_lines, connectivity=8, ltype=cv2.CV_32S)
+    min_height = 300  # Define a minimum height threshold for vertical lines, adjust as needed
+
+    filtered_vertical_lines = np.zeros_like(vertical_lines)
+    for i in range(1, num_labels):  # Start from 1 to skip the background
+        # Check if the bounding box height of the component is greater than the minimum height
+        if stats[i, cv2.CC_STAT_HEIGHT] >= min_height:
+            filtered_vertical_lines[labels == i] = 255
+
+    # Replace the original vertical_lines with the filtered version
+    vertical_lines = filtered_vertical_lines
+    #cv2.imshow("vertical_lines_after_filter", vertical_lines)
+    #cv2.waitKey(0)
+
+    #Horizontal line
     image_2 = cv2.erode(img_bin, hor_kernel, iterations=1)
     horizontal_lines = cv2.dilate(image_2, hor_kernel, iterations=4)
-    # cv2.imshow("horizontal_lines", image_2)
-    # cv2.waitKey(0)
+    #cv2.imshow("horizontal_lines", image_2)
+    #cv2.waitKey(0)
+    #Filter out smaller horizontal line
+    # Connected Components to Filter Lines Based on Length
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(horizontal_lines, connectivity=8, ltype=cv2.CV_32S)
+    min_length = 500  # Define a minimum length threshold for horizontal lines, adjust as needed
 
+    filtered_horizontal_lines = np.zeros_like(horizontal_lines)
+    for i in range(1, num_labels):  # Start from 1 to skip the background
+        # Check if the bounding box width of the component is greater than the minimum length
+        if stats[i, cv2.CC_STAT_WIDTH] >= min_length:
+            filtered_horizontal_lines[labels == i] = 255
+    # Replace the original horizontal_lines with the filtered version
+    horizontal_lines = filtered_horizontal_lines
+    #cv2.imshow("horizontal_lines_after_filter", horizontal_lines)
+    #cv2.waitKey(0)
+
+    #Combine Vertical and Horizontal
     img_vh = cv2.addWeighted(vertical_lines, 0.5, horizontal_lines, 0.5, 0.0)
     img_vh = cv2.erode(~img_vh, kernel, iterations=4)
-    # cv2.imshow("img_vh", img_vh)
-    # cv2.waitKey(0)
+    #cv2.imshow("img_vh", img_vh)
+    #cv2.waitKey(0)
     thresh, img_vh = cv2.threshold(
         img_vh, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
@@ -200,11 +233,13 @@ def process_input_file(file):
             filtered_contours.append(cnt)
             cv2.rectangle(filtered_contours_img, (x, y),
                           (x + w, y + h), (0, 0, 255), 2)
-    # cv2.imshow("Filtered Contours", filtered_contours_img)
-    # cv2.waitKey(0)
+    #cv2.imshow("Filtered Contours", filtered_contours_img)
+    #cv2.waitKey(0)
 
     contours, bounding_boxes = sort_contours(
         filtered_contours, "top-to-bottom")
+
+
 
     # Group contours into rows and columns
     rows = []
@@ -228,48 +263,61 @@ def process_input_file(file):
     if current_row:  # Add the last row
         rows.append(current_row)
 
-    # Calculate average cell size in column 3
-    column_3_sizes = [cv2.boundingRect(cnt)[2] * cv2.boundingRect(cnt)[3]
-                      for row in rows for cnt, box in row if 'column_3' in cv2.boundingRect(cnt)]
-    avg_area_column_3 = sum(column_3_sizes) / \
-        len(column_3_sizes) if column_3_sizes else 0
+    # Additional definitions for exclusion zone based on Column 3
+    if rows and len(rows[0]) >= 3:
+        first_row_sorted_contours, _ = sort_contours([c[0] for c in rows[0]], "left-to-right")
+        if len(first_row_sorted_contours) < 3:
+            print("Error: Not enough contours in the first row to define Column 3.")
+        else:
+            third_column = first_row_sorted_contours[2]
+            x3, y3, w3, h3 = cv2.boundingRect(third_column)
+            exclusion_height = 1800  # Manually set height for the exclusion zone
+            exclusion_area = (x3, y3, w3, exclusion_height)  # Define the exclusion area
+        '''
+        # Draw the exclusion area on the image for visualization
+        cv2.rectangle(img, (x3, y3), (x3 + w3, y3 + exclusion_height), (255, 0, 0), 2)
+        cv2.putText(img, "Exclusion Zone", (x3, y3 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv2.imshow("Exclusion Zone Visualization", img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        '''
+        
+        # Filter contours outside the exclusion area
+        valid_contours = [contour for contour, (x, y, w, h) in zip(contours, bounding_boxes)
+                        if not ((x < x3 + w3 and x + w > x3) and (y < y3 + exclusion_height and y + h > y3))]
+    else:
+        print("Error: No rows detected or the first row does not have enough data.")
+    # Proceed with further processing on valid_contours
+    # This could include grouping them into rows, further filtering, or directly processing each contour.
 
-    # Set a threshold as a fraction of the average area to filter out small cells
-    area_threshold_factor = 0.5  # Example: 50% of the average area
-    area_threshold = avg_area_column_3 * area_threshold_factor
 
-    # Crop and save each cell
     base_folder = "./tempTables"
     file_name_without_ext = os.path.splitext(os.path.basename(file))[0]
     individual_file_folder = os.path.join(base_folder, file_name_without_ext)
     os.makedirs(individual_file_folder, exist_ok=True)
 
-    for row_idx, row in enumerate(rows[1:], start=2):
-        column_contours, _ = sort_contours(
-            [cnt[0] for cnt in row], "left-to-right")
-        for cell_idx, (cnt, box) in enumerate(zip(column_contours, _)):
-            x, y, w, h = box
-            cell_area = w * h
+    # Process valid contours
+    if valid_contours:
+        valid_contour_ids = set(id(cnt) for cnt in valid_contours)  # Use contour ids for fast membership testing
+        for row_idx, row in enumerate(rows[1:], start=2):  # Skip the first row
+            # Filter contours in the row to include only those in valid_contours
+            valid_row_contours = [c for c in row if id(c[0]) in valid_contour_ids]
+            if valid_row_contours:
+                column_contours, bounding_boxes = sort_contours([c[0] for c in valid_row_contours], "left-to-right")
+                for cell_idx, contour in enumerate(column_contours):
+                    x, y, w, h = cv2.boundingRect(contour)
+                    cell_area = w * h
+                    if cell_idx + 1 in [1, 2, 3, 4]:  # Save only specified columns
+                        column_folder = os.path.join(individual_file_folder, f"row_{row_idx}", f"column_{cell_idx+1}")
+                        os.makedirs(column_folder, exist_ok=True)
+                        cropped_cell = img[y:y+h, x:x+w]
+                        filename = os.path.join(column_folder, f"cell_{cell_idx+1}.png")
+                        cv2.imwrite(filename, cropped_cell)
+                        print(f"Saved: {filename}")
+    else:
+        print("Error: No valid contours found.")
 
-            if cell_idx + 1 in [1, 2, 4]:  # Process columns 1, 2, and 4 as usual
-                column_folder = os.path.join(
-                    individual_file_folder, f"row_{row_idx}", f"column_{cell_idx+1}")
-                os.makedirs(column_folder, exist_ok=True)
-                cropped_cell = img[y:y+h, x:x+w]
-                filename = os.path.join(
-                    column_folder, f"cell_{cell_idx+1}.png")
-                cv2.imwrite(filename, cropped_cell)
-                print(f"Saved: {filename}")
-            # For column 3, check against the dynamic area threshold
-            elif cell_idx + 1 == 3 and cell_area >= area_threshold:
-                column_folder = os.path.join(
-                    individual_file_folder, f"row_{row_idx}", "column_3")
-                os.makedirs(column_folder, exist_ok=True)
-                cropped_cell = img[y:y+h, x:x+w]
-                filename = os.path.join(
-                    column_folder, f"cell_{cell_idx+1}.png")
-                cv2.imwrite(filename, cropped_cell)
-                print(f"Saved: {filename}")
+
     # /tempTables/production5000pg/rows
 
 
@@ -285,6 +333,6 @@ def take_input(image):
     print("Executed")
 
 
-# Testing
-# image = '500000294400_pages/page_3.png'
-# take_input(image)
+# TestingS
+#image = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000306364_pages/page_14.png'
+#take_input(image)
