@@ -1,7 +1,8 @@
 import cv2
 import pytesseract
 import os
-
+from tt import process_images_in_folder
+from yolo_pred import track_object
 word_counter = 1
 
 
@@ -18,7 +19,7 @@ def create_directory_structure(base_dir, image_path):
     return path_to_create
 
 
-def detect_first_word(image_path, base_output_dir="finalOutput"):
+def detect_first_word(image_path, base_output_dir="firstWordGen"):
     # Use create_directory_structure to determine the full output path
     output_dir = create_directory_structure(base_output_dir, image_path)
 
@@ -41,9 +42,11 @@ def detect_first_word(image_path, base_output_dir="finalOutput"):
             output_filename = os.path.join(
                 output_dir, f"cell_{word_counter}.png")
             cv2.imwrite(output_filename, cropped_img)
+            process_images_in_folder(output_dir)
+            track_object(output_dir)
             print(f"Saved cropped to '{output_filename}'")
             break  # Breaking after the first word detected and saved
 
 
-# image_path = 'tempTables/page_9/row_3/column_4/cell_4.png'
+# image_path = 'tempTables/page_1/row_2/column_2/cell_2.png'
 # detect_first_word(image_path)

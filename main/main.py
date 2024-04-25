@@ -5,6 +5,7 @@ from tt import process_images_in_folder
 from firstWord import detect_first_word
 from yolo_pred import track_object
 import time
+from popSheet import process_files
 
 
 def process_pdf_or_folder(input_data, is_file=False):
@@ -60,5 +61,7 @@ def process_pdf_or_folder(input_data, is_file=False):
                     process_images_in_folder(column_path)
                     # time.sleep(5)
                     track_object(column_path)
+
+    process_files('finalOutput')
 
     return "All PDFs have been processed."

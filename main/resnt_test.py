@@ -65,3 +65,6 @@ def resnetPred(image_path):
         print(
             f'Predicted class for the input image is: {class_names[predicted_class_index]}')
         return class_names[predicted_class_index]
+
+
+resnetPred("finalOutput/page_10/row_3/column_2/cell_69.png")

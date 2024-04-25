@@ -16,7 +16,7 @@ def pad_image_to_size(image, target_width=640, target_height=360):
 
 
 def process_directory_structure(base_path, save_path):
-    i = 500
+    i = 1800
     allowed_columns = ['column_1', 'column_2',
                        'column_3']
     for dirpath, dirnames, filenames in os.walk(base_path):
@@ -40,6 +40,6 @@ def process_directory_structure(base_path, save_path):
 
 
 # Example usage
-base_path = 'finalOutput'
+base_path = 'sc'
 save_path = 'processedOutput'
 process_directory_structure(base_path, save_path)

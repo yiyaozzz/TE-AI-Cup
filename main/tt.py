@@ -24,3 +24,6 @@ def process_images_in_folder(folder_path, target_width=640, target_height=360):
                     img, target_width, target_height)
                 processed_img.save(filepath, 'PNG')
                 print(f"Processed and saved: {filename}")
+
+
+# process_images_in_folder("finalOutput/page_6/row_2/column_2")

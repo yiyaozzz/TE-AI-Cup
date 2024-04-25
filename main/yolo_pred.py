@@ -5,7 +5,7 @@ import os
 import time
 
 
-model = YOLO('model/best2.pt')
+model = YOLO('model/best4.pt')
 
 
 def create_directory_structure(base_dir, image_path):
@@ -44,7 +44,7 @@ def track_object(directory_path, base_output_dir='finalOutput'):
                 f"Error: Image could not be read from path {image_path}. Check the path and file permissions.")
             continue
 
-        results = model.predict(img, conf=0.2, iou=0.5)
+        results = model.predict(img, conf=0.2, iou=0.1)
         detections = []
         for r in results:
             boxes = r.boxes
@@ -81,5 +81,5 @@ def track_object(directory_path, base_output_dir='finalOutput'):
 
 
 # Example of how to call the function
-# directory_path = 'tempTables/page_9/row_3/column_4'
+# directory_path = 'finalOutput/page_6/row_2/column_2'
 # track_object(directory_path)
