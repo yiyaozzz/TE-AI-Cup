@@ -1,6 +1,6 @@
 from pdf_converter import convert_pdf_to_png
 import os
-from ocr_det import take_input
+from cell_detection import take_input
 from tt import process_images_in_folder
 from firstWord import detect_first_word
 from yolo_pred import track_object
