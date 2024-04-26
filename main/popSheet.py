@@ -1,7 +1,8 @@
 import os
 import pandas as pd
 from fuzzywuzzy import process
-from api import apiResult
+from gapi import apiResult
+from tallyYolo import predict_and_show_labels
 from resnt_test import resnetPred
 
 
@@ -35,74 +36,66 @@ def process_files(base_path):
 
             col_folders = sorted(os.listdir(row_path),
                                  key=lambda x: int(x.split('_')[1]))
-            group_flag = False
+
             for col_folder in col_folders:
                 col_number = col_folder.split('_')[1]
-                # print("COL NUM " + col_number)
                 col_path = os.path.join(row_path, col_folder)
+                sort_file = sorted(os.listdir(col_path),
+                                   key=lambda x: int(x.split('_')[0]))
+
+                # col_path = os.path.join(row_path, col_folder)
                 results[page_number][row_number][col_number] = []
 
-                for file_name in os.listdir(col_path):
-                    # print(file_name)
-                    # print("COL FOLDER " + col_folder)
-                    # print("COL PATH " + col_path)
+                for i in range(len(sort_file)):
+                    file_name = sort_file[i]
                     file_path = os.path.join(col_path, file_name)
                     result = None
                     if 'column_1' == col_folder:
                         if 'N_A' in file_name or 'N-A' in file_name:
                             result = 'N/A'
-                            # print("COL OTHER: " + result)
-                        elif 'Number' in file_name or col_folder != 'column_4':
+                        elif 'Number' in file_name:
                             result = apiResult(file_path)
                     elif 'column_2' == col_folder:
-                        # print("COL 2")
                         if 'N_A' in file_name or 'N-A' in file_name:
                             result = 'N/A'
-                            print("COL OTHER: " + result)
-                        elif 'Words' in file_name or col_folder != 'column_4':
+                        elif 'Words' in file_name:
                             result = apiResult(file_path)
                     elif 'column_3' == col_folder:
-                        # print("COL 3")
                         if 'N_A' in file_name or 'N-A' in file_name:
                             result = 'N/A'
-                            # print("COL OTHER: " + result)
-                        elif 'Number' in file_name or col_folder != 'column_4':
+                        elif 'Circled_Number' in file_name:
+                            continue
+                        elif 'Number' in file_name:
                             result = apiResult(file_path)
-                        elif 'Words-and-tallys' in file_name:
-                            continue
-                        elif 'Words' in file_name:
-                            continue
-                        elif 'Scratch' in file_name:
-                            continue
 
                     elif col_folder == 'column_4':
-                        # print("COL 4")
+                        # if page_number == "10" and row_number == "3":
+                        #     a = 0
                         if 'N_A' in file_name or 'N-A' in file_name:
                             result = 'N/A'
-                            # print("COL 4: " + result)
+                        elif 'Words-and-tallys' in file_name:
+                            result = predict_and_show_labels(file_path)
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
-                        elif 'Words-and-tallys' in file_name:
-                            result = resnetPred(file_path)
+                        elif 'Circled_Number' in file_name:
+                            continue
                         elif 'Number' in file_name:
                             result = apiResult(file_path)
                             if result is None or result is 'None':
-                                result = 0
-
-                        elif 'Circled-number' in file_name or 'Number' in file_name:
-                            # Save in text file to cross check values
-                            continue
+                                result = '0'
 
                     if result:
                         results[page_number][row_number][col_number].append(
                             result)
                         row_data.append(result)
 
+            # Append the collected row data to the main data list for Excel
             if row_data:
                 data_for_excel.append(row_data)
 
+    # Create a DataFrame from the collected data
     df = pd.DataFrame(data_for_excel)
-
+    # Saving the DataFrame to an Excel file
     df.to_excel('output.xlsx', index=False)
     print(results)
     return results
@@ -110,6 +103,5 @@ def process_files(base_path):
 
 base_path = 'finalOutput'
 final_results = process_files(base_path)
-# print(final_results)
 
 # ADD FLAGS: If just word detected in col 4 then push flag

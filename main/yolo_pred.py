@@ -3,7 +3,7 @@ import cv2
 from ultralytics.utils.plotting import Annotator
 import os
 import time
-
+from PIL import Image
 
 model = YOLO('model/best4.pt')
 
@@ -31,7 +31,21 @@ def group_detections_by_rows(detections, vertical_threshold=10):
         if not found_row:
             rows.append([det])
     return rows
-
+def pad_image_to_size(img, file_path, target_width=640, target_height=360):
+    width, height = img.size
+    if width != target_width or height != target_height:
+        # Calculate padding sizes
+        left = (target_width - width) // 2
+        top = (target_height - height) // 2
+        right = target_width - width - left
+        bottom = target_height - height - top
+        
+        # Create a new image with white background
+        new_img = Image.new(img.mode, (target_width, target_height), "white")
+        new_img.paste(img, (left, top))
+        new_img.save(file_path)  # Save directly to the given path
+        return file_path
+    return file_path
 
 def track_object(directory_path, base_output_dir='finalOutput'):
     if not os.path.isdir(directory_path):
@@ -79,7 +93,13 @@ def track_object(directory_path, base_output_dir='finalOutput'):
             for x1, y1, x2, y2, label in row:
                 cropped_img = img[y1:y2, x1:x2]
                 filename = f"{file_index}_{label}.png"
-                cv2.imwrite(os.path.join(output_dir, filename), cropped_img)
+                temp_path = os.path.join(output_dir, filename)
+
+                if label == 'Words-and-tallys':
+                    pil_img = Image.fromarray(cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
+                    pad_image_to_size(pil_img, temp_path)
+                else:
+                    cv2.imwrite(temp_path, cropped_img)
                 file_index += 1
 
 
