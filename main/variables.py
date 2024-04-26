@@ -86,33 +86,32 @@ OPRID = {'ACD':	'Accordion',
          'WB':	'Wire Bent ',
          'WO':	'Wire Out',
          'WK': 'Wrinkles'}
-COLUMNHEADING = ['Operation	',
-                 'Confirmation Number',
-                 'Confirmation Counter',
-                 'Scrap Code	',
+COLUMNHEADING = ['Work Center',
+                 'Operation',
+                 'Scrap Code',
                  'Scrap Description',
-                 'Short Text	',
                  'Op. Good Qty',
                  'Op. Scrap Qty',
-                 'UoM	',
+                 'UoM',
                  'PPM____________',
                  'Posting date',
-                 'Posted by',	'Entry Date',	'Entry Time	',
+                 'Entry Date',
                  'Prod Order',
                  'Material Number',
                  'Material Description',
                  'Parent Good qty',
                  'Parent Scrap qty',
-                 'Order Unit	', 'Prod.Hier	',
-                 'MRP Controller',
-                 'Order Type	',
-                 'Control key',
-                 'Tool Number',
-                 'GPL Code',	'Plant',
-                 'Actual Operator Id',
-                 'Prodn Supervisor',
+                 'Order Unit', 
+                 'Order Type',
+                 'Plant',
                  'Entered Good Qty',
                  'Entered Scrap Qty',
-                 'Entered UoM',
-                 'Person responsible',
-                 'Name of the person responsible']
+                 'Entered UoM']
+'''
+Work Center: column 2
+Operation: column 1
+Scrap Code: correspond with Scrap Description
+Scrap Description: column 4, need to expand the short form 
+Op. Good Qty: column 3
+Op. Scrap Qty: minus by Op. Good Qty
+'''
