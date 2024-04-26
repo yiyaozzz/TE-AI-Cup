@@ -78,6 +78,12 @@ def process_files(base_path):
                             result = resnetPred(file_path)
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
+                        elif 'Number' in file_name:
+                            result = apiResult(file_path)
+                            if result is None or result is 'None' or result.lower() is 'u':
+                                result = 0
+                            elif result.lower() is 'sou':
+                                result = 500
                         # elif 'Circled-number' in file_name or 'Number' in file_name:
                         #     result = apiResult(file_path)
 

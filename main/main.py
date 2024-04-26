@@ -16,6 +16,7 @@ def process_pdf_or_folder(input_data, is_file=False):
         with open(file_path, "wb") as f:
             f.write(input_data.getbuffer())
         images = convert_pdf_to_png(file_path)
+        # ocr_detection(file_path/page_1)
         for image_path in images:
             print("Image path:", image_path)
             take_input(image_path)
