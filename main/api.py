@@ -35,5 +35,5 @@ def apiResult(image):
     return outputText
 
 
-apiResult("finalOutput/page_5/row_4/column_1/1_Number.png")
+# apiResult("finalOutput/page_5/row_4/column_1/1_Number.png")
 # finalOutput/page_11/row_4/column_4/1_Number.jpg

@@ -65,16 +65,17 @@ def track_object(directory_path, base_output_dir='finalOutput'):
                 label = model.names[int(box.cls)]
                 detections.append((x1, y1, x2, y2, label))
 
-        # Group detections into rows
+        # Group detections into rows and sort rows by their vertical start position
         rows = group_detections_by_rows(detections)
+        # Sort rows by the y1 value of their first detection
+        rows.sort(key=lambda r: r[0][1])
 
         # Within each row, sort by label ('Words' first) and then by x1
+        file_index = 1
         for row in rows:
             row.sort(key=lambda x: (x[4] != 'Words', x[0]))
 
-        # Save each detection, organized by row and labeled sequentially
-        file_index = 1
-        for row in rows:
+            # Save each detection, organized by row and labeled sequentially
             for x1, y1, x2, y2, label in row:
                 cropped_img = img[y1:y2, x1:x2]
                 filename = f"{file_index}_{label}.png"
@@ -83,5 +84,5 @@ def track_object(directory_path, base_output_dir='finalOutput'):
 
 
 # Example of how to call the function
-# directory_path = 'tempTables/page_9/row_3/column_4'
+# directory_path = 'tempTables/page_15/row_2/column_4'
 # track_object(directory_path)
