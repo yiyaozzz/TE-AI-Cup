@@ -18,6 +18,7 @@ VGG16TEST@.h5
 data*
 runs*
 finalOutput*
+ocrOutput*
 500000294400_pages/page_9.png
 500000294400_pages/page_8.png
 500000294400_pages/page_7.png
