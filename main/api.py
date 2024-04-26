@@ -2,8 +2,8 @@ import boto3
 from botocore.config import Config
 from PIL import Image
 
-# export AWS_DEFAULT_REGION=us-east-2
 
+# export AWS_DEFAULT_REGION=us-east-2
 client = boto3.client('textract', aws_access_key_id='AKIASYEFUGCXXA7JYW5R',
                       aws_secret_access_key='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')
 
@@ -13,7 +13,7 @@ def increase_threshold(image_path):
         gray_img = img.convert('L')
         threshold_value = 250
         threshold_img = gray_img.point(lambda p: p > threshold_value and 255)
-        threshold_img.save('test/ok.png')
+        threshold_img.save("test/ok.png")
 
 
 def apiResult(image):
@@ -30,5 +30,10 @@ def apiResult(image):
         outputText = response['Blocks'][1].get('Text', None)
     else:
         outputText = None
+        print("This image is not detected " + image)
     print(outputText)
     return outputText
+
+
+# apiResult("finalOutput/page_7/row_3/column_3/1_Number.jpg")
+# finalOutput/page_11/row_4/column_4/1_Number.jpg

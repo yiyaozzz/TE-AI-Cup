@@ -20,3 +20,6 @@ runs*
 finalOutput*
 yolov8n.pt
 YOLOD*
+firstWordGen
+500000294400*
+YoloDataset

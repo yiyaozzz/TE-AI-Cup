@@ -67,4 +67,4 @@ def resnetPred(image_path):
         return class_names[predicted_class_index]
 
 
-resnetPred("finalOutput/page_10/row_3/column_2/cell_69.png")
+# resnetPred("finalOutput/page_14/row_2/column_4/15_Words-and-tallys.jpg")
