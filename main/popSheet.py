@@ -94,9 +94,9 @@ def process_files(base_path):
                 data_for_excel.append(row_data)
 
     # Create a DataFrame from the collected data
-    df = pd.DataFrame(data_for_excel)
+    df = pd.DataFrame(results)
     # Saving the DataFrame to an Excel file
-    df.to_excel('output.xlsx', index=False)
+    df.to_json('output.json')
     print(results)
     return results
 
