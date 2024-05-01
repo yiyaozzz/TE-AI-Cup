@@ -81,7 +81,7 @@ def process_files(base_path):
                             continue
                         elif 'Number' in file_name:
                             result = apiResult(file_path)
-                            if result is None or result is 'None':
+                            if result is None or result == 'None':
                                 result = '0'
 
                     if result:
