@@ -4,6 +4,19 @@ from fuzzywuzzy import process
 from gapi import apiResult
 from tallyYolo import predict_and_show_labels
 from resnt_test import resnetPred
+import json
+from variables import OPRID
+
+
+def get_closest_match(word, dictionary=OPRID, threshold=70):
+    closest_match = process.extractOne(word, dictionary.keys())
+    if closest_match and closest_match[1] >= threshold:
+        # closest_match returns a tuple (matching_key, score), check if score meets the threshold
+        matching_key = closest_match[0]
+
+        return dictionary[matching_key]
+    else:
+        return word
 
 
 def process_files(base_path):
@@ -75,8 +88,13 @@ def process_files(base_path):
                             result = 'N/A'
                         elif 'Words-and-tallys' in file_name:
                             result = predict_and_show_labels(file_path)
+                            if result == 'Number_1':
+                                result = '1'
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
+                            print("Result before" + result)
+                            result = get_closest_match(result)
+                            print("Result after" + result)
                         elif 'Circled_Number' in file_name:
                             continue
                         elif 'Number' in file_name:
@@ -94,9 +112,13 @@ def process_files(base_path):
                 data_for_excel.append(row_data)
 
     # Create a DataFrame from the collected data
-    df = pd.DataFrame(results)
+
+    # Saving the cleaned results to an Excel file
+    with open('output.json', 'w') as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)
+    # df = pd.DataFrame(results)
     # Saving the DataFrame to an Excel file
-    df.to_json('output.json')
+    # df.to_json('output.json')
     print(results)
     return results
 
