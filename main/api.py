@@ -16,7 +16,7 @@ def increase_threshold(image_path):
         threshold_img.save("test/ok.png")
 
 
-def apiResult(image):
+def aapiResult(image):
     increase_threshold(image)
     with open(image, 'rb') as file:
 
@@ -35,5 +35,5 @@ def apiResult(image):
     return outputText
 
 
-# apiResult("finalOutput/page_5/row_4/column_1/1_Number.png")
+# aapiResult("test/10_scrapDes01.png")
 # finalOutput/page_11/row_4/column_4/1_Number.jpg

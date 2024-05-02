@@ -6,6 +6,7 @@ from tallyYolo import predict_and_show_labels
 from resnt_test import resnetPred
 import json
 from variables import OPRID
+from api import aapiResult
 
 
 def get_closest_match(word, dictionary=OPRID, threshold=70):
@@ -23,7 +24,6 @@ def process_files(base_path):
     results = {}  # Dictionary to hold results organized by pages, rows, and columns
     data_for_excel = []  # List to hold data for Excel export
 
-    # Get all page folders and sort them numerically by extracting numbers
     page_folders = [f for f in os.listdir(base_path) if f.startswith("page_")]
     page_folders_sorted = sorted(
         page_folders, key=lambda x: int(x.split('_')[1]))
@@ -45,7 +45,7 @@ def process_files(base_path):
             row_path = os.path.join(page_path, row_folder)
             results[page_number][row_number] = results[page_number].get(
                 row_number, {})
-            row_data = []  # Initialize list to store row data for Excel
+            row_data = []
 
             col_folders = sorted(os.listdir(row_path),
                                  key=lambda x: int(x.split('_')[1]))
@@ -56,7 +56,6 @@ def process_files(base_path):
                 sort_file = sorted(os.listdir(col_path),
                                    key=lambda x: int(x.split('_')[0]))
 
-                # col_path = os.path.join(row_path, col_folder)
                 results[page_number][row_number][col_number] = []
 
                 for i in range(len(sort_file)):
@@ -92,33 +91,40 @@ def process_files(base_path):
                                 result = '1'
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
-                            print("Result before" + result)
+                            if result.isalpha() == False:
+                                print("VALUE NOT ENG ", result)
+                                result = aapiResult(file_path)
+                            if result == "태":
+                                result = "EH"
+                            elif result == "나":
+                                result == "LT"
+                            elif result == "EN":
+                                result = "EW"
+
                             result = get_closest_match(result)
-                            print("Result after" + result)
+
                         elif 'Circled_Number' in file_name:
                             continue
                         elif 'Number' in file_name:
                             result = apiResult(file_path)
                             if result is None or result == 'None':
                                 result = '0'
-
+                            elif result.isnumeric() == False:
+                                result = aapiResult(file_path)
+                                if result is None or result == 'None':
+                                    result = '0'
+                            elif result.upper() == 'N/A':
+                                result = "N/A"
                     if result:
                         results[page_number][row_number][col_number].append(
                             result)
                         row_data.append(result)
 
-            # Append the collected row data to the main data list for Excel
             if row_data:
                 data_for_excel.append(row_data)
 
-    # Create a DataFrame from the collected data
-
-    # Saving the cleaned results to an Excel file
     with open('output.json', 'w') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
-    # df = pd.DataFrame(results)
-    # Saving the DataFrame to an Excel file
-    # df.to_json('output.json')
     print(results)
     return results
 
