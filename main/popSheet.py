@@ -10,14 +10,17 @@ from api import aapiResult
 
 
 def get_closest_match(word, dictionary=OPRID, threshold=70):
-    closest_match = process.extractOne(word, dictionary.keys())
-    if closest_match and closest_match[1] >= threshold:
-        # closest_match returns a tuple (matching_key, score), check if score meets the threshold
-        matching_key = closest_match[0]
-
-        return dictionary[matching_key]
-    else:
+    if word is None:
         return word
+    else:
+        closest_match = process.extractOne(word, dictionary.keys())
+        if closest_match and closest_match[1] >= threshold:
+            # closest_match returns a tuple (matching_key, score), check if score meets the threshold
+            matching_key = closest_match[0]
+
+            return dictionary[matching_key]
+        else:
+            return word
 
 
 def process_files(base_path):
@@ -91,9 +94,9 @@ def process_files(base_path):
                                 result = '1'
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
-                            if result.isalpha() == False:
-                                print("VALUE NOT ENG ", result)
-                                result = aapiResult(file_path)
+                            # if result.isalpha() == False:
+                            #     print("VALUE NOT ENG ", result)
+                            #     result = aapiResult(file_path)
                             if result == "태":
                                 result = "EH"
                             elif result == "나":
@@ -109,10 +112,10 @@ def process_files(base_path):
                             result = apiResult(file_path)
                             if result is None or result == 'None':
                                 result = '0'
-                            elif result.isnumeric() == False:
-                                result = aapiResult(file_path)
-                                if result is None or result == 'None':
-                                    result = '0'
+                            # elif result.isnumeric() == False:
+                            #     result = aapiResult(file_path)
+                            #     if result is None or result == 'None':
+                            #         result = '0'
                             elif result.upper() == 'N/A':
                                 result = "N/A"
                     if result:
@@ -129,7 +132,7 @@ def process_files(base_path):
     return results
 
 
-# base_path = 'finalOutput'
-# final_results = process_files(base_path)
+base_path = 'finalOutput'
+final_results = process_files(base_path)
 
 # ADD FLAGS: If just word detected in col 4 then push flag

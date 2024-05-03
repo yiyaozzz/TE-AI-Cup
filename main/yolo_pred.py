@@ -119,5 +119,5 @@ def track_object(directory_path, base_output_dir='finalOutput'):
 
 
 # Example of how to call the function
-# directory_path = 'tempTables/page_9/row_4/column_4'
-# track_object(directory_path)
+directory_path = 'tempTables/page_9/row_4/column_4'
+track_object(directory_path)
