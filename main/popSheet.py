@@ -91,16 +91,20 @@ def process_files(base_path):
                                 result = '1'
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
+                            '''
                             if result.isalpha() == False:
                                 print("VALUE NOT ENG ", result)
                                 result = aapiResult(file_path)
+                            '''
                             if result == "태":
                                 result = "EH"
                             elif result == "나":
                                 result == "LT"
                             elif result == "EN":
                                 result = "EW"
-                            if result is not None or result is not 'None':
+                            if result is not None: 
+                                continue
+                            else:
                                 result = get_closest_match(result)
 
                         elif 'Circled_Number' in file_name:
@@ -109,12 +113,15 @@ def process_files(base_path):
                             result = apiResult(file_path)
                             if result is None or result == 'None':
                                 result = '0'
+                            '''
                             elif result.isnumeric() == False:
                                 result = aapiResult(file_path)
                                 if result is None or result == 'None':
                                     result = '0'
-                            elif result.upper() == 'N/A':
+                            
+                            else result.upper() == 'N/A':
                                 result = "N/A"
+                            '''
                     if result:
                         results[page_number][row_number][col_number].append(
                             result)
@@ -128,8 +135,7 @@ def process_files(base_path):
     print(results)
     return results
 
-
-# base_path = 'finalOutput'
-# final_results = process_files(base_path)
+#base_path = 'finalOutput/page_16/row_3/column_1'
+#final_results = process_files(base_path)
 
 # ADD FLAGS: If just word detected in col 4 then push flag

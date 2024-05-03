@@ -4,7 +4,7 @@ from PIL import Image, ExifTags, ImageEnhance
 
 
 # Set Google API credentials
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "/Users/pravin/Desktop/TE_Comp/TE-AI-Cup/main/service_account_token.json"
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "/Users/zyy/Documents/GitHub/TE-AI-Cup/main/service_account_token.json"
 
 
 def prepare_image(image_path, min_width=1024, min_height=768):
