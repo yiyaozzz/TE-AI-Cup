@@ -13,14 +13,12 @@ def create_directory_structure(base_dir, image_path):
     page_index = next(i for i, part in enumerate(parts) if 'page_' in part)
     path_to_create = os.path.join(base_dir, *parts[page_index:-1])
 
-    # Create the directory if it does not exist
     os.makedirs(path_to_create, exist_ok=True)
 
     return path_to_create
 
 
 def detect_first_word(image_path, base_output_dir="firstWordGen"):
-    # Use create_directory_structure to determine the full output path
     output_dir = create_directory_structure(base_output_dir, image_path)
 
     img = cv2.imread(image_path)

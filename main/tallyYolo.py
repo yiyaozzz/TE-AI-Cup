@@ -1,15 +1,13 @@
 import cv2
 from PIL import Image
 import os
-# Make sure this import works with your installed ultralytics version
 from ultralytics import YOLO
 
-# Load the YOLO model
-model = YOLO('model/best_Tally.pt')  # Ensure the model path is correct
+
+model = YOLO('model/best_Tally.pt')
 
 
 def predict_and_show_labels(image_path):
-    # Load an image using OpenCV
     img = cv2.imread(image_path)
     if img is None:
         print(f"Failed to load image at {image_path}")
@@ -38,9 +36,6 @@ def predict_and_show_labels(image_path):
 
                 return label
 
-    # Display the image with bounding boxes
 
-
-# Example usage
 # image_path = "finalOutput/page_10/row_3/column_4/2_Words-and-tallys.png"
 # predict_and_show_labels(image_path)

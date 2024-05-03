@@ -1,0 +1,23 @@
+{
+  "name": "te-ai-cup",
+  "version": "1.0.0",
+  "description": "These files processes scanned PDF documents, ensuring they are in landscape orientation before performing Optical Character Recognition (OCR) using the DocTR library. It consists of two main components: `format_correction.py` for adjusting document orientation, and `test_doctr.py` for OCR processing.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "develop": "node main/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.3",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  }
+}

@@ -100,8 +100,8 @@ def process_files(base_path):
                                 result == "LT"
                             elif result == "EN":
                                 result = "EW"
-
-                            result = get_closest_match(result)
+                            if result is not None or result is not 'None':
+                                result = get_closest_match(result)
 
                         elif 'Circled_Number' in file_name:
                             continue
@@ -129,7 +129,7 @@ def process_files(base_path):
     return results
 
 
-base_path = 'finalOutput'
-final_results = process_files(base_path)
+# base_path = 'finalOutput'
+# final_results = process_files(base_path)
 
 # ADD FLAGS: If just word detected in col 4 then push flag

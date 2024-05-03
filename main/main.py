@@ -43,7 +43,6 @@ def process_pdf_or_folder(input_data, is_file=False):
         folder_path = os.path.join(tempTables_path, folder_name)
         for row_name in os.listdir(folder_path):  # Iterate over each row
             row_path = os.path.join(folder_path, row_name)
-            # Iterate over each column
             for column_name in os.listdir(row_path):
                 column_path = os.path.join(row_path, column_name)
                 images = [os.path.join(column_path, f) for f in os.listdir(
@@ -51,16 +50,13 @@ def process_pdf_or_folder(input_data, is_file=False):
 
                 if column_name in ["column_1", "column_2"]:
                     for image in images:
-                        # Process with detect_first_word
                         detect_first_word(image)
                 elif column_name in ["column_3", "column_4"]:
-                    # Process the whole folder
                     print(
                         f"Processing folder for object tracking: {column_name}")
                     print(column_path)
 
                     process_images_in_folder(column_path)
-                    # time.sleep(5)
                     track_object(column_path)
 
     process_files('finalOutput')

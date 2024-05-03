@@ -24,3 +24,5 @@ firstWordGen
 500000294400*
 YoloDataset
 *.zip
+node_modules
+nextjs
