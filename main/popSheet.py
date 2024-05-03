@@ -13,14 +13,14 @@ def get_closest_match(word, dictionary=OPRID, threshold=70):
     if word is None:
         return word
     else:
-        closest_match = process.extractOne(word, dictionary.keys())
+        closest_match = process.extractOne(word.upper(), dictionary.keys())
         if closest_match and closest_match[1] >= threshold:
             # closest_match returns a tuple (matching_key, score), check if score meets the threshold
             matching_key = closest_match[0]
 
             return dictionary[matching_key]
         else:
-            return word
+            return word + "_flag"
 
 
 def process_files(base_path):

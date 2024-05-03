@@ -223,7 +223,7 @@
                 "4",
                 "Voids",
                 "2",
-                "DF",
+                "DF_flag",
                 "1"
             ]
         },
@@ -269,7 +269,7 @@
                 "485"
             ],
             "4": [
-                "ман",
+                "ман_flag",
                 "2"
             ]
         }
@@ -420,14 +420,14 @@
                 "425"
             ],
             "4": [
-                "#545",
+                "#545_flag",
                 "1",
-                "#645",
+                "#645_flag",
                 "2",
-                "#705",
+                "#705_flag",
                 "5",
                 "4",
-                "#905",
+                "#905_flag",
                 "4",
                 "Exposed Wire",
                 "4",
@@ -470,15 +470,15 @@
             ],
             "4": [
                 "Discoloration",
-                "Samples",
+                "(SP)_flag",
                 "5",
                 "Damaged Inner Surface",
                 "4",
-                "STK",
+                "STK_flag",
                 "1",
                 "Wrinkles",
                 "2",
-                "то",
+                "то_flag",
                 "1"
             ]
         },
@@ -527,13 +527,13 @@
             "4": [
                 "5",
                 "5",
-                "Tensile Test",
+                "(TT)_flag",
                 "Skive Mark",
                 "5",
                 "5",
                 "5",
                 "2",
-                "Вр",
+                "Вр_flag",
                 "5",
                 "Damaged Inner Surface",
                 "3",
@@ -541,13 +541,13 @@
                 "2",
                 "Wrinkles",
                 "2",
-                "Tensile Test",
+                "ett_flag",
                 "1",
-                "FB",
+                "FB_flag",
                 "1",
                 "Misaligned",
                 "1",
-                "ERK",
+                "ERK_flag",
                 "1",
                 "Delamination",
                 "1"

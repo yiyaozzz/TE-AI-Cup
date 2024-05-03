@@ -87,4 +87,4 @@ def apiResult(path):
 
 
 # Example usage
-# apiResult('test/10_scrapDes01.png')
+# apiResult('test/image.png')
