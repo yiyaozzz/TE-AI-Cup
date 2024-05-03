@@ -31,6 +31,8 @@ def group_detections_by_rows(detections, vertical_threshold=10):
         if not found_row:
             rows.append([det])
     return rows
+
+
 def pad_image_to_size(img, file_path, target_width=640, target_height=360):
     width, height = img.size
     if width != target_width or height != target_height:
@@ -39,13 +41,14 @@ def pad_image_to_size(img, file_path, target_width=640, target_height=360):
         top = (target_height - height) // 2
         right = target_width - width - left
         bottom = target_height - height - top
-        
+
         # Create a new image with white background
         new_img = Image.new(img.mode, (target_width, target_height), "white")
         new_img.paste(img, (left, top))
         new_img.save(file_path)  # Save directly to the given path
         return file_path
     return file_path
+
 
 def track_object(directory_path, base_output_dir='finalOutput'):
     if not os.path.isdir(directory_path):
@@ -91,18 +94,30 @@ def track_object(directory_path, base_output_dir='finalOutput'):
 
             # Save each detection, organized by row and labeled sequentially
             for x1, y1, x2, y2, label in row:
+                # Ensure cropping is within image bounds
+                x1, y1, x2, y2 = max(0, x1), max(0, y1), min(
+                    img.shape[1], x2), min(img.shape[0], y2)
+                if x2 <= x1 or y2 <= y1:
+                    print("HELLO")
+                    continue  # Skip invalid boxes
+
                 cropped_img = img[y1:y2, x1:x2]
                 filename = f"{file_index}_{label}.png"
                 temp_path = os.path.join(output_dir, filename)
 
                 if label == 'Words-and-tallys':
-                    pil_img = Image.fromarray(cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
-                    pad_image_to_size(pil_img, temp_path)
+                    try:
+                        pil_img = Image.fromarray(
+                            cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
+                        pad_image_to_size(pil_img, temp_path)
+                    except Exception as e:
+                        print(
+                            f"Error processing image {image_filename}: {str(e)}")
                 else:
                     cv2.imwrite(temp_path, cropped_img)
                 file_index += 1
 
 
 # Example of how to call the function
-# directory_path = 'tempTables/page_15/row_2/column_4'
+# directory_path = 'tempTables/page_9/row_4/column_4'
 # track_object(directory_path)
