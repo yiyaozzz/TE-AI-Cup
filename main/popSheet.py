@@ -17,7 +17,7 @@ def get_closest_match(word, dictionary=OPRID, threshold=70):
 
         return dictionary[matching_key]
     else:
-        return word
+        return word + '_flag'
 
 
 def process_files(base_path):
