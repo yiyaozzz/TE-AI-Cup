@@ -132,7 +132,7 @@ def process_files(base_path):
     return results
 
 
-base_path = 'finalOutput'
-final_results = process_files(base_path)
+#base_path = 'finalOutput'
+#final_results = process_files(base_path)
 
 # ADD FLAGS: If just word detected in col 4 then push flag
