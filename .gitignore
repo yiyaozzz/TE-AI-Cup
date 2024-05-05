@@ -26,3 +26,7 @@ YoloDataset
 *.zip
 node_modules
 nextjs
+main/popSheet.py
+main/popSheet01.py
+main/popSheet.py
+main/popSheet.py
