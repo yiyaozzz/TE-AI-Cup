@@ -45,6 +45,7 @@ def process_data(data):
             if previous_row and previous_row['op_good_qty'] is None and not previous_row['scrap_quantities'] and operation == 'N/A':
                 operation = previous_row['operation']
                 work_center = previous_row['work_center']
+                previous_row = None
                     
             # Handle Col4
             for item in scrap_details:
