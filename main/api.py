@@ -35,5 +35,5 @@ def aapiResult(image):
     return outputText
 
 
-# aapiResult("test/10_scrapDes01.png")
+# aapiResult("test/image.png")
 # finalOutput/page_11/row_4/column_4/1_Number.jpg
