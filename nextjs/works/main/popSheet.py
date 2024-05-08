@@ -3,27 +3,37 @@ import pandas as pd
 from fuzzywuzzy import process
 from main.gapi import apiResult
 from main.tallyYolo import predict_and_show_labels
-from main.resnt_test import resnetPred
 import json
 from main.variables import OPRID
 from main.api import aapiResult
 
 
-def get_closest_match(word, dictionary=OPRID, threshold=70):
+def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
 
     if word is None:
-        return 'replaceWord_flag'
+        return 'wordNotFound_flag'
     if not isinstance(word, str):
         word = str(word)
     closest_match = process.extractOne(word, dictionary.keys())
 
     if closest_match and closest_match[1] >= threshold:
-        # closest_match returns a tuple (matching_key, score), check if score meets the threshold
         matching_key = closest_match[0]
 
         return dictionary[matching_key]
     else:
-        return word + '_flag'
+        result = aapiResult(image)
+
+        if result is not None or result != 'None':
+            result = str(result)
+            closest_match2 = process.extractOne(result, dictionary.keys())
+            if closest_match2 and closest_match2[1] >= threshold:
+                matching_key = closest_match2[0]
+
+                return dictionary[matching_key]
+            else:
+                return word + '_flag'
+        else:
+            return word + '_flag'
 
 
 def process_files(base_path, uid="ff"):
@@ -85,10 +95,21 @@ def process_files(base_path, uid="ff"):
                             continue
                         elif 'Number' in file_name:
                             result = apiResult(file_path)
-
+                            if result is not None and result != 'None':
+                                if isinstance(result, str) and not result.isnumeric():
+                                    result = aapiResult(file_path)
+                                    if result is not None and result != 'None':
+                                        if isinstance(result, str) and not result.isnumeric():
+                                            result = 'ComptQTY_flag'
+                        elif 'Word' in file_name:
+                            result = apiResult(file_path)
+                            if result is not None and result != 'None':
+                                if isinstance(result, str) and not result.isnumeric():
+                                    result = aapiResult(file_path)
+                                    if result is not None and result != 'None':
+                                        if isinstance(result, str) and not result.isnumeric():
+                                            result = 'ComptQTY_flag'
                     elif col_folder == 'column_4':
-                        # if page_number == "10" and row_number == "3":
-                        #     a = 0
                         if 'N_A' in file_name or 'N-A' in file_name:
                             result = 'N/A'
                         elif 'Words-and-tallys' in file_name:
@@ -97,9 +118,6 @@ def process_files(base_path, uid="ff"):
                                 result = '1'
                         elif 'Words' in file_name:
                             result = apiResult(file_path)
-                            # if result.isalpha() == False:
-                            #     print("VALUE NOT ENG ", result)
-                            #     result = aapiResult(file_path)
                             if result == "태":
                                 result = "EH"
                             elif result == "나":
@@ -107,7 +125,7 @@ def process_files(base_path, uid="ff"):
                             elif result == "EN":
                                 result = "EW"
 
-                            result = get_closest_match(result)
+                            result = get_closest_match(result, image=file_path)
 
                         elif 'Circled_Number' in file_name:
                             continue
@@ -115,10 +133,6 @@ def process_files(base_path, uid="ff"):
                             result = apiResult(file_path)
                             if result is None or result == 'None':
                                 result = '0'
-                            # elif result.isnumeric() == False:
-                            #     result = aapiResult(file_path)
-                            #     if result is None or result == 'None':
-                            #         result = '0'
                             elif result.upper() == 'N/A':
                                 result = "N/A"
                     if result:
@@ -135,7 +149,7 @@ def process_files(base_path, uid="ff"):
     return results
 
 
-# base_path = 'finalOutput'
+# base_path = 'nextjs/works/finalOutput_259e9b1d-6f19-43e8-8316-660dc698c88d.pdf'
 # final_results = process_files(base_path)
 
 # ADD FLAGS: If just word detected in col 4 then push flag

@@ -56,6 +56,7 @@ OPRID = {'ACD':	'Accordion',
          'OAL OS': 'Overall Length Long',
          'OAL US':	'Overall Length Short',
          'OF': 'Overflow',
+         'PBC' 'Proximal Bad Cut'
          'PC': 'Pancake',
          'PROT': 'Protrusion',
          'GN11': 'PTFE on Pull Wire',

@@ -25,3 +25,4 @@ firstWordGen
 YoloDataset
 *.zip
 node_modules
+noUseCode

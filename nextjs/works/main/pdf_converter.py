@@ -1,4 +1,4 @@
-import fitz  
+import fitz
 import os
 
 
@@ -23,3 +23,7 @@ def convert_pdf_to_png(pdf_path, dpi=250):
     doc.close()
 
     return image_paths
+
+
+# convert_pdf_to_png(
+#     'uploads/9d3ae5f3-3d56-4fe0-bb67-15670f5cbc6b.pdf')

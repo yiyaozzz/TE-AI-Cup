@@ -35,5 +35,5 @@ def aapiResult(image):
     return outputText
 
 
-# aapiResult("nextjs/works/finalOutput/page_16/row_3/column_4/1_Words.png")
+# aapiResult("image copy.png")
 # finalOutput/page_11/row_4/column_4/1_Number.jpg
