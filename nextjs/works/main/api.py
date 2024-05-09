@@ -35,5 +35,6 @@ def aapiResult(image):
     return outputText
 
 
-aapiResult("nextjs/works/finalOutput_b2518793-8e06-4ec7-aa7a-954ee56bb933.pdf/page_16/row_3/column_4/24_Words.png")
+# aapiResult(
+#     "finalOutput_1b30bfe3-3999-45f8-ba1b-65aee3554ef5.pdf/page_9/row_3/column_4/1_Words.png")
 # finalOutput/page_11/row_4/column_4/1_Number.jpg

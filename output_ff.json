@@ -251,7 +251,7 @@
                 "493"
             ],
             "4": [
-                "МАН_flag",
+                "Misaligned",
                 "1",
                 "Exposed Hypotube",
                 "1",
@@ -361,7 +361,7 @@
                 "487"
             ],
             "4": [
-                "АСАНН_flag"
+                "Accordion"
             ]
         }
     },
@@ -428,21 +428,21 @@
                 "1",
                 "Tip Damaged",
                 "1",
-                "#705_flag",
+                "S0#1_flag",
                 "1",
-                "4605_flag",
+                "CSA6_flag",
                 "1",
                 "Skive Mark",
                 "1",
-                "BU_flag",
+                "Broken Wire",
                 "1",
-                "#BUS_flag",
+                "# BUS_flag",
                 "2",
-                "EN_flag",
+                "FN_flag",
                 "1",
                 "Wrinkles",
                 "4",
-                "FW_flag",
+                "Broken Wire",
                 "4"
             ]
         },
@@ -497,7 +497,7 @@
             ],
             "4": [
                 "Leak Test",
-                "НА_flag",
+                "VII_flag",
                 "5",
                 "5",
                 "2"
@@ -532,7 +532,7 @@
                 "(TT)_flag",
                 "2",
                 "Scratches",
-                "(21)_flag",
+                "Stain",
                 "5",
                 "3",
                 "Scratches",
@@ -553,11 +553,11 @@
                 "1",
                 "KNK_flag",
                 "1",
-                "СЕК_flag",
+                "Cracks",
                 "1",
                 "Skive Mark",
                 "1",
-                "GNI_flag",
+                "GNII_flag",
                 "1"
             ]
         },

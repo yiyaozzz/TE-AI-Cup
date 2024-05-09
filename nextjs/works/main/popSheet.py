@@ -6,34 +6,50 @@ from main.tallyYolo import predict_and_show_labels
 import json
 from main.variables import OPRID
 from main.api import aapiResult
+from main.dimVal import dimValPred
 
 
-def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
+def get_closest_match(word, dictionary=OPRID, threshold=80, image=''):
+    if word is not None:
+        word = word.upper()
+        closest_match = process.extractOne(
+            word, dictionary.keys(), score_cutoff=threshold)
+        if closest_match:
+            return dictionary[closest_match[0]]
 
-    if word is None:
-        return 'wordNotFound_flag'
-    if not isinstance(word, str):
-        word = str(word).upper()
-    closest_match = process.extractOne(word, dictionary.keys())
+    result = aapiResult(image)
+    if result is None or result == 'None':
+        return 'wordNotFound_flag'  # No valid word found from API
 
-    if closest_match and closest_match[1] >= threshold:
-        matching_key = closest_match[0]
+    result = str(result).upper()
+    # Check if there's any numeric value in the result
+    if any(char.isdigit() for char in result):
+        dim_pred = dimValPred(image)
+        if dim_pred is None:
+            return 'wordNotFound_flag'
+        # Process the prediction
+        dim_pred = process_dim_prediction(dim_pred)
+        closest_match3 = process.extractOne(
+            dim_pred, dictionary.keys(), score_cutoff=threshold)
+        if closest_match3:
+            return dictionary[closest_match3[0]]
+        return dim_pred + '_flag'
 
-        return dictionary[matching_key]
-    else:
-        result = aapiResult(image)
+    closest_match2 = process.extractOne(
+        result, dictionary.keys(), score_cutoff=threshold)
+    if closest_match2:
+        return dictionary[closest_match2[0]]
 
-        if result is not None or result != 'None':
-            result = str(result).upper()
-            closest_match2 = process.extractOne(result, dictionary.keys())
-            if closest_match2 and closest_match2[1] >= threshold:
-                matching_key = closest_match2[0]
+    return result + '_flag'
 
-                return dictionary[matching_key]
-            else:
-                return word + '_flag'
-        else:
-            return word + '_flag'
+
+def process_dim_prediction(pred):
+    """ Process the prediction from dimValPred and adjust the string if necessary. """
+    pred = str(pred).upper().split()
+    # Ensure there are at least 4 items and the second item is '0'
+    if len(pred) >= 4 and pred[1] == '0':
+        pred[1] = 'O'  # Change '0' to 'O'
+    return ' '.join(pred)
 
 
 def process_files(base_path, uid="ff"):

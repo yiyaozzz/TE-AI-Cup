@@ -7,72 +7,66 @@ from nextjs.works.main.gapi import apiResult
 
 
 def process_image(path):
+    """Process the image and extract text from left to right based on bounding boxes."""
     inputImage = cv2.imread(path)
     if inputImage is None:
         raise ValueError("Image could not be loaded. Please check the path.")
-
     grayscaleImage = cv2.cvtColor(inputImage, cv2.COLOR_BGR2GRAY)
     _, binaryImage = cv2.threshold(
         grayscaleImage, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
     cv2.floodFill(binaryImage, None, (0, 0), 0)
     contours, _ = cv2.findContours(
         binaryImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Sort contours from left to right
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
 
     aggregated_text = ""
     for _, c in enumerate(contours):
         boundRect = cv2.boundingRect(c)
         rectX, rectY, rectWidth, rectHeight = boundRect
         rectArea = rectWidth * rectHeight
-
         minArea = 8
         if rectArea > minArea:
             currentCrop = inputImage[rectY:rectY +
                                      rectHeight, rectX:rectX + rectWidth]
             cropped_image_path = save_cropped_image(currentCrop)
             text_from_api = aapiResult(cropped_image_path)
-            # Ensure text_from_api is not None and is a string before concatenating
             if text_from_api:
-
                 aggregated_text += text_from_api
                 aggregated_text = aggregated_text.strip()
-
     return aggregated_text
 
 
 def process_image_gapi(path):
+    """Process the image and extract text from left to right based on bounding boxes using a different API."""
     inputImage = cv2.imread(path)
     if inputImage is None:
         raise ValueError("Image could not be loaded. Please check the path.")
-
     grayscaleImage = cv2.cvtColor(inputImage, cv2.COLOR_BGR2GRAY)
     _, binaryImage = cv2.threshold(
         grayscaleImage, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
     cv2.floodFill(binaryImage, None, (0, 0), 0)
     contours, _ = cv2.findContours(
         binaryImage, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Sort contours from left to right
+    contours = sorted(contours, key=lambda c: cv2.boundingRect(c)[0])
 
     aggregated_text = ""
     for _, c in enumerate(contours):
         boundRect = cv2.boundingRect(c)
         rectX, rectY, rectWidth, rectHeight = boundRect
         rectArea = rectWidth * rectHeight
-
         minArea = 8
         if rectArea > minArea:
             currentCrop = inputImage[rectY:rectY +
                                      rectHeight, rectX:rectX + rectWidth]
             cropped_image_path = save_cropped_image(currentCrop)
             text_from_api = apiResult(cropped_image_path)
-            # Ensure text_from_api is not None and is a string before concatenating
-            if text_from_api is None:
-                aggregated_text = None
-                # Safely concatenate valid strings
-            else:
+            if text_from_api:
                 aggregated_text += text_from_api
                 aggregated_text = aggregated_text.strip()
-
     return aggregated_text
 
 

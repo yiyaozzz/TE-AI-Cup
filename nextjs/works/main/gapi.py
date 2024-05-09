@@ -86,5 +86,5 @@ def apiResult(path):
     return full_document_text if full_document_text else None
 
 
-# Example usage
-apiResult('nextjs/works/finalOutput_b2518793-8e06-4ec7-aa7a-954ee56bb933.pdf/page_14/row_2/column_4/18_Words.png')
+# # Example usage
+# apiResult('finalOutput_1b30bfe3-3999-45f8-ba1b-65aee3554ef5.pdf/page_9/row_3/column_4/1_Words.png')
