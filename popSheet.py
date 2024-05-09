@@ -4,36 +4,101 @@ from fuzzywuzzy import process
 from main.gapi import apiResult
 from main.tallyYolo import predict_and_show_labels
 import json
-from main.variables import OPRID
+from nextjs.works.main.variables import OPRID
 from main.api import aapiResult
+from dimVal import dimValPred
 
+
+# def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
+#     # if any(char.isdigit() for char in word):
+#     #     word = dimValPred(image)
+#     #     if word is None:
+#     #         return 'wordNotFound_flag'
+#     if word is None:
+#         word = aapiResult(image)
+#         if word is None:
+#             return 'wordNotFound_flag'
+
+#     if not isinstance(word, str):
+#         word = str(word).upper()
+#     closest_match = process.extractOne(word, dictionary.keys())
+
+#     if closest_match and closest_match[1] >= threshold:
+#         matching_key = closest_match[0]
+
+#         return dictionary[matching_key]
+#     else:
+#         result = aapiResult(image)
+
+#         if result is not None or result != 'None':
+#             result = str(result).upper()
+#             closest_match2 = process.extractOne(result, dictionary.keys())
+#             if closest_match2 and closest_match2[1] >= threshold:
+#                 matching_key = closest_match2[0]
+
+#                 return dictionary[matching_key]
+#             else:
+#                 return word + '_flag'
+#         else:
+#             return word + '_flag'
+
+# def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
+
+#     if word is None:
+#         return 'wordNotFound_flag'
+#     if not isinstance(word, str):
+#         word = str(word).upper()
+#     closest_match = process.extractOne(word, dictionary.keys())
+
+#     if closest_match and closest_match[1] >= threshold:
+#         matching_key = closest_match[0]
+
+#         return dictionary[matching_key]
+#     else:
+#         result = aapiResult(image)
+
+#         if result is not None or result != 'None':
+#             result = str(result).upper()
+#             closest_match2 = process.extractOne(result, dictionary.keys())
+#             if closest_match2 and closest_match2[1] >= threshold:
+#                 matching_key = closest_match2[0]
+
+#                 return dictionary[matching_key]
+#             else:
+#                 return word + '_flag'
+#         else:
+#             return word + '_flag'
 
 def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
-
+    # First check if the word is None, then try to get it from the API
     if word is None:
-        return 'wordNotFound_flag'
-    if not isinstance(word, str):
-        word = str(word)
-    closest_match = process.extractOne(word, dictionary.keys())
+        word = aapiResult(image)
+        if word is None:
+            return 'wordNotFound_flag'  # Return flag if no word is found from the API
 
-    if closest_match and closest_match[1] >= threshold:
-        matching_key = closest_match[0]
+    # Ensure the word is a string and convert it to uppercase
+    word = str(word).upper()
 
-        return dictionary[matching_key]
-    else:
-        result = aapiResult(image)
+    # Try to find a close match in the dictionary
+    closest_match = process.extractOne(
+        word, dictionary.keys(), score_cutoff=threshold)
+    if closest_match:
+        # Return the dictionary value if a close match is found
+        return dictionary[closest_match[0]]
 
-        if result is not None or result != 'None':
-            result = str(result)
-            closest_match2 = process.extractOne(result, dictionary.keys())
-            if closest_match2 and closest_match2[1] >= threshold:
-                matching_key = closest_match2[0]
+    # If no close match, try the API again only if the initial word was None
+    # Ensuring word was indeed 'None' originally
+    result = aapiResult(image) if word == "NONE" else None
+    if result:
+        result = str(result).upper()
+        closest_match2 = process.extractOne(
+            result, dictionary.keys(), score_cutoff=threshold)
+        if closest_match2:
+            # Return the dictionary value if a close match is found
+            return dictionary[closest_match2[0]]
 
-                return dictionary[matching_key]
-            else:
-                return word + '_flag'
-        else:
-            return word + '_flag'
+    # If all attempts fail, return the last word tried with '_flag'
+    return (result or word) + '_flag'
 
 
 def process_files(base_path, uid="ff"):
@@ -149,5 +214,10 @@ def process_files(base_path, uid="ff"):
     return results
 
 
-base_path = 'nextjs/works/finalOutput_259e9b1d-6f19-43e8-8316-660dc698c88d.pdf'
+base_path = 'nextjs/works/finalOutput_b2518793-8e06-4ec7-aa7a-954ee56bb933.pdf'
 final_results = process_files(base_path)
+
+# base_path = 'finalOutput_b2518793-8e06-4ec7-aa7a-954ee56bb933.pdf'
+# final_results = process_files(base_path)
+
+# ADD FLAGS: If just word detected in col 4 then push flag

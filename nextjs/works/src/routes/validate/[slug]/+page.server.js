@@ -51,7 +51,9 @@ export async function load({ params }) {
 		row: str[1],
 		col: str[2],
 		prevPage: lines[1],
+		nextPage: lines[2],
 		prevURL: `/api/image?folderId=${folderId}&page=${lines[1]}`,
+		nextURL:`/api/image?folderId=${folderId}&page=${lines[2]}`,
 		curURL: `/api/image?folderId=${folderId}&page=${str[0]}`,
 		value: value
 	};

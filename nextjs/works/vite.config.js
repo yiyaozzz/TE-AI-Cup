@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
     server: {
+        port:8080,
         watch: {
         usePolling: true
         }

@@ -87,4 +87,4 @@ def apiResult(path):
 
 
 # Example usage
-# apiResult('nextjs/works/finalOutput/page_16/row_3/column_4/1_Words.png')
+apiResult('nextjs/works/finalOutput_b2518793-8e06-4ec7-aa7a-954ee56bb933.pdf/page_14/row_2/column_4/18_Words.png')

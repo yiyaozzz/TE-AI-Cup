@@ -1,78 +1,64 @@
 import json
 import sys
 import re
+from finalSheet import excel_prod
 
 
 def validate_col3_with_flags(file_path):
     with open(file_path, 'r') as file:
         data = json.load(file)
-    for page_number, page_content in data.items():
-        previous_valid_col3_value = None
 
-        for row_number, row_content in page_content.items():
-            if (row_content.get('1', []) == ['N/A'] and
-                row_content.get('3', []) == ['N/A'] and
-                    row_content.get('4', []) == ['N/A']):
-                del page_content[row_number]
-                # print(
-                #     f"Page {page_number}, Row {row_number} removed due to specific structure (col1, col3, col4 all 'N/A')")
-                continue
+    previous_col3_value = None
+    for page, rows in data.items():
+        for row, columns in rows.items():
+            col4_items = columns.get('4', [])
+            sum_col4 = sum(safe_int(item.get('value', 0))
+                           for item in col4_items if isinstance(item, dict))
 
-            if all(value == ['N/A'] for value in row_content.values()):
-                del page_content[row_number]
-                # print(
-                #     f"Page {page_number}, Row {row_number} removed: All columns are 'N/A'")
-                continue
+            current_col3 = columns.get('3', [])
+            current_col3_value = safe_convert_to_int(
+                current_col3[0]) if current_col3 else None
 
-            col3 = row_content.get('3', [])
-            col4 = row_content.get('4', [])
+            handle_flags(page, row, columns, previous_col3_value,
+                         current_col3_value, sum_col4)
 
-            if col3 == ["N/A"]:
-                # print(
-                #     f"Page {page_number}, Row {row_number}, Column 3 has 'N/A', skipping...")
-                continue
+            # Update previous_col3_value for the next iteration
+            previous_col3_value = safe_convert_to_int(
+                current_col3[0]) if current_col3 and current_col3[0] != "N/A" else None
 
-            numeric_values = []
-            flags_detected = False
-            for value in col3:
-                if '_flag' in value:
-                    numeric_part = value.split('_flag')[0]
-                    flags_detected = True
-                    if numeric_part.isdigit():
-                        numeric_values.append(int(numeric_part))
-                elif value.isdigit():
-                    numeric_values.append(int(value))
-
-            col4_numeric_sum = 0
-            for item in col4:
-                if isinstance(item, dict):
-                    if '_flag' not in item['name']:
-                        col4_numeric_sum += int(item['value'])
-
-            if len(numeric_values) != 1:
-                row_content['3'] = [
-                    f"{col3[0]}_flag"] if numeric_values else ["number_flag"]
-                # print(
-                #     f"Page {page_number}, Row {row_number}, Column 3 flagged due to invalid data")
-            else:
-                current_col3_value = numeric_values[0]
-                if previous_valid_col3_value is not None:
-                    expected_value = previous_valid_col3_value - col4_numeric_sum
-                    if expected_value != current_col3_value:
-                        row_content['3'] = [f"{current_col3_value}_flag"]
-                        # print(
-                        #     f"Page {page_number}, Row {row_number}, Column 3 flagged due to calculation mismatch")
-                    else:
-                        if flags_detected:
-                            row_content['3'] = [str(current_col3_value)]
-                        # print(
-                        #     f"Page {page_number}, Row {row_number}, Column 3 value is correct as expected.")
-
-                previous_valid_col3_value = current_col3_value
     with open(file_path, 'w') as file:
         json.dump(data, file, indent=4)
 
     return data
+
+
+def handle_flags(page, row, columns, previous_col3_value, current_col3_value, sum_col4):
+    if page == '1':
+        if columns.get('3', [''])[0] == "N/A":
+            return
+        elif current_col3_value != 500:
+            columns['3'] = [f"{columns['3'][0]}_flag"]
+    else:
+        if previous_col3_value is not None and current_col3_value is not None:
+            expected_col3_value = previous_col3_value - sum_col4
+            if expected_col3_value != current_col3_value:
+                columns['3'] = [f"{columns['3'][0]}_flag"]
+
+
+def safe_convert_to_int(value):
+    """Convert values to integer or return None if not possible"""
+    try:
+        return int(value.replace('_flag', '')) if '_flag' in value else int(value)
+    except ValueError:
+        return None
+
+
+def safe_int(value):
+    """Safely convert value to integer, returning 0 if conversion fails"""
+    try:
+        return int(value)
+    except ValueError:
+        return 0
 
 
 def search_first_flag(data, path=''):
@@ -94,10 +80,11 @@ def search_first_flag(data, path=''):
 
 def main():
     pdf_path = sys.argv[1]
+
+    validate_col3_with_flags(pdf_path)
     with open(pdf_path, 'r') as file:
         data = json.load(file)
 
-    validate_col3_with_flags(pdf_path)
     result = search_first_flag(data)
 
     if result:
@@ -112,6 +99,16 @@ def main():
             print("1")
         else:
             print(int(pageNum)-1)
+
+        if int(pageNum) == 1:
+            print("5")
+        elif int(pageNum) == 17:
+            print("17")
+        else:
+            print(int(pageNum) + 1)
+        # UID.exlsx
+    # else:
+    #     excel_prod(pdf_path)
 
 
 if __name__ == "__main__":

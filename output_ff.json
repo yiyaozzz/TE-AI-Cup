@@ -99,7 +99,7 @@
                 "500"
             ],
             "4": [
-                "0"
+                "G"
             ]
         }
     },
@@ -112,6 +112,7 @@
                 "Trim"
             ],
             "3": [
+                "N/A",
                 "N/A"
             ],
             "4": [
@@ -214,23 +215,12 @@
                 "CATASY01"
             ],
             "3": [
-                "475"
+                "498"
             ],
             "4": [
-                "Overflow",
-                "5",
-                "4",
-                "Foreign Material",
-                "2",
-                "Exposed Wire",
-                "5",
-                "5",
+                "Damaged Liner",
                 "1",
-                "Voids",
-                "1",
-                "Skive Mark",
-                "1",
-                "Air Bubbles",
+                "Delamination",
                 "1"
             ]
         },
@@ -238,7 +228,9 @@
             "1": [
                 "N/A"
             ],
-            "2": [],
+            "2": [
+                "N/A"
+            ],
             "3": [
                 "N/A"
             ],
@@ -256,10 +248,17 @@
                 "CATASY01"
             ],
             "3": [
-                "475"
+                "493"
             ],
             "4": [
-                "0"
+                "МАН_flag",
+                "1",
+                "Exposed Hypotube",
+                "1",
+                "Inner Diameter Block",
+                "2",
+                "Damaged Liner",
+                "1"
             ]
         },
         "3": {
@@ -270,19 +269,10 @@
                 "CATASY01"
             ],
             "3": [
-                "449"
+                "493"
             ],
             "4": [
-                "5",
-                "5",
-                "3",
-                "Damaged Liner",
-                "5",
-                "2",
-                "Inner Diameter Block",
-                "1",
-                "Misaligned",
-                "5"
+                "0"
             ]
         }
     },
@@ -309,10 +299,10 @@
                 "CATASY01"
             ],
             "3": [
-                "449"
+                "493"
             ],
             "4": [
-                "о"
+                "0"
             ]
         },
         "4": {
@@ -323,8 +313,7 @@
                 "CATASY01"
             ],
             "3": [
-                "449",
-                "449"
+                "443"
             ],
             "4": [
                 "0"
@@ -354,11 +343,10 @@
                 "CATASY01"
             ],
             "3": [
-                "443"
+                "492"
             ],
             "4": [
                 "Exposed Hypotube",
-                "5",
                 "1"
             ]
         },
@@ -370,11 +358,10 @@
                 "CATASY01"
             ],
             "3": [
-                "439"
+                "487"
             ],
             "4": [
-                "Accordion",
-                "N/A"
+                "АСАНН_flag"
             ]
         }
     },
@@ -401,11 +388,10 @@
                 "CATASY01"
             ],
             "3": [
-                "437"
+                "487"
             ],
             "4": [
-                "Skive Mark",
-                "2"
+                "0"
             ]
         },
         "4": {
@@ -432,31 +418,32 @@
                 "Quality"
             ],
             "3": [
-                "412"
+                "461"
             ],
             "4": [
-                "19545_flag",
-                "1",
-                "#103_flag",
-                "1",
                 "Damaged Inner Surface",
                 "5",
-                "1",
+                "4",
                 "Misaligned",
-                "5",
+                "1",
+                "Tip Damaged",
+                "1",
+                "#705_flag",
+                "1",
+                "4605_flag",
                 "1",
                 "Skive Mark",
-                "2",
-                "Exposed Wire",
-                "2",
-                "Broken Wire",
                 "1",
-                "Dim 6 Outer Diameter Undersized",
+                "BU_flag",
                 "1",
-                "#605_flag",
-                "3",
-                "#705_flag",
-                "2"
+                "#BUS_flag",
+                "2",
+                "EN_flag",
+                "1",
+                "Wrinkles",
+                "4",
+                "FW_flag",
+                "4"
             ]
         },
         "3": {
@@ -483,19 +470,19 @@
                 "Quality"
             ],
             "3": [
-                "393"
+                "445",
+                "445"
             ],
             "4": [
+                "Damaged Inner Surface",
+                "5",
+                "1",
                 "Stringers",
                 "5",
-                "1",
-                "Damaged Inner Surface",
-                "5",
-                "2",
-                "Wrinkles",
-                "1",
-                "Damaged Inner Surface",
-                "5"
+                "(SP)_flag",
+                "4",
+                "White Line",
+                "1"
             ]
         },
         "3": {
@@ -506,11 +493,14 @@
                 "QUALITY1"
             ],
             "3": [
-                "390"
+                "433"
             ],
             "4": [
-                "wordNotFound_flag",
-                "3"
+                "Leak Test",
+                "НА_flag",
+                "5",
+                "5",
+                "2"
             ]
         }
     },
@@ -536,37 +526,38 @@
             "2": [
                 "QUALITY1"
             ],
-            "3": [
-                "55"
-            ],
+            "3": [],
             "4": [
+                "Foreign Material",
+                "(TT)_flag",
+                "2",
                 "Scratches",
-                "Dim 1 Outer Diameter Oversized",
+                "(21)_flag",
                 "5",
+                "3",
+                "Scratches",
                 "5",
-                "Voids",
-                "5",
-                "Discoloration",
-                "4",
                 "Exposed Wire",
                 "3",
-                "Scratches",
-                "3",
-                "Damaged Inner Surface",
-                "2",
-                "Skive Mark",
-                "2",
-                "Misaligned",
+                "Bad Cut",
                 "1",
-                "Delamination",
+                "Fibers",
                 "1",
                 "Foreign Material",
                 "1",
+                "BP_flag",
+                "1",
+                "Flash",
+                "1",
                 "Damaged Liner",
                 "1",
-                "Re-glue",
+                "KNK_flag",
                 "1",
-                "Bad Cut",
+                "СЕК_flag",
+                "1",
+                "Skive Mark",
+                "1",
+                "GNI_flag",
                 "1"
             ]
         },
@@ -608,7 +599,7 @@
                 "PACKINT1"
             ],
             "3": [
-                "355"
+                "405"
             ],
             "4": [
                 "0"

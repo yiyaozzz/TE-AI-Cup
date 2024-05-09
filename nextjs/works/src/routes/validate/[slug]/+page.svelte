@@ -44,6 +44,7 @@
 <body>
 	<img src={data.prevURL} alt="Reload page!" width="900px" />
 	<img src={data.curURL} alt="Reload page!" width="900px" />
+	<img src={data.nextURL} alt="Reload page!" width="900px" />
 	<p>
 		{`Error at page: ${data.page}, row: ${data.row}, col: ${data.col}. Please fix the _flags and submit`}
 	</p>

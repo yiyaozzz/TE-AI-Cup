@@ -13,7 +13,7 @@ def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
     if word is None:
         return 'wordNotFound_flag'
     if not isinstance(word, str):
-        word = str(word)
+        word = str(word).upper()
     closest_match = process.extractOne(word, dictionary.keys())
 
     if closest_match and closest_match[1] >= threshold:
@@ -24,7 +24,7 @@ def get_closest_match(word, dictionary=OPRID, threshold=70, image=''):
         result = aapiResult(image)
 
         if result is not None or result != 'None':
-            result = str(result)
+            result = str(result).upper()
             closest_match2 = process.extractOne(result, dictionary.keys())
             if closest_match2 and closest_match2[1] >= threshold:
                 matching_key = closest_match2[0]
