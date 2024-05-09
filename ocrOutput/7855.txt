@@ -1,0 +1,19 @@
+Production Order Document
+Production Order Qty: 500
+1
+Production Order: 500000307855
+PC
+Material: SA0155-01
+Sheet: 1 of 1
+Rev F
+Material Type:
+ZFRT
+Description: Edwards Flex Shaft Commander
+Order Type: ZSTD
+155885
+Production
+Version:
+7987
+Project Phase:
+Plant / Business 1213/AC5
+Unit:

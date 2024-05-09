@@ -1,63 +1,112 @@
 import pandas as pd
 import json
+from variables import OPRID, COLUMNHEADING, SCRAP_CODE_MAPPING
+import excel_ocr
+import os
 
-# Load the JSON data
-with open('/Users/zyy/Documents/GitHub/TE-AI-Cup/output.json') as file:
-    data = json.load(file)
+def load_json(filename):
+    with open(filename, 'r') as file:
+        return json.load(file)
 
-# Define the header for the DataFrame to be used in Excel
-header = ["Work Center", "Operation", "Scrap Code", "Scrap Description",
-          "Op. Good Qty", "Op. Scrap Qty", "UoM", "PPM__________",
-          "Posting date", "Entry Date", "Prod Order", "Material Number",
-          "Material Description", "Parent Good qty", "Parent Scrap qty",
-          "Order Unit", "Order Type", "Plant", "Entered Good Qty",
-          "Entered Scrap Qty", "Entered UoM"]
+def process_data(data, excel_path):
+    all_rows = []
+    previous_row = None
 
-# Process each page in the JSON data
-all_rows = []
-for page, content in data.items():
-    for row_key, row_val in content.items():
-        if row_val is None:  # Skip null rows
-            continue
-        operation = row_val.get('1', [''])[0] if row_val.get('1') else ''
-        work_center = row_val.get('2', [''])[0] if row_val.get('2') else ''
-        op_good_qty = row_val.get('3', [''])[0] if row_val.get('3') else ''
-        scrap_details = row_val.get('4', [])
-        # Handle empty or N/A column 4
-        if not scrap_details or scrap_details == ['N/A']:
-            # Leave "Scrap Description" and "Op. Scrap Qty" as empty
-            scrap_details = ['', '0']
+    for page, contents in data.items():
+        for row_id, columns in contents.items():
+            operation = columns.get('1', ['N/A'])[0]
+            work_center = columns.get('2', ['N/A'])[0]
+            op_good_qty = columns.get('3', ['N/A'])[0]
+            scrap_details = columns.get('4', [])
 
-        # Initialize dictionary to store scrap quantities
-        scrap_quantities = {}
-        current_description = None
-        for detail in scrap_details:
-            # Check for non-numeric
-            if isinstance(detail, str) and (detail.isalpha() or not detail.isdigit()):
-                # Save accumulated quantity for previous description
-                if current_description is not None:
-                    all_rows.append([work_center, operation, None, current_description, op_good_qty,
-                                     scrap_quantities.get(current_description, ''), None] + [None]*(len(header)-7))
-                current_description = detail
-                # Initialize or reset for new description
-                scrap_quantities[current_description] = 0
-            elif detail.isdigit():  # Accumulate quantities
-                if current_description:
-                    scrap_quantities[current_description] += int(detail)
+            # Filter out invalid rows
+            if operation == 'N/A' and work_center == 'N/A' and op_good_qty == 'N/A' and (not scrap_details or scrap_details == ['N/A']):
+                continue
 
-        # Append the last accumulated item if it exists
-        if current_description is not None:
-            all_rows.append([work_center, operation, None, current_description, op_good_qty,
-                             scrap_quantities.get(current_description, ''), None] + [None]*(len(header)-7))
-        # If no details, append blank scrap description
-        elif current_description is None and (not scrap_details or scrap_details == ['']):
-            all_rows.append([work_center, operation, None, '', op_good_qty, '',
-                             None] + [None]*(len(header)-7))
+            # Convert op_good_qty to integer if it is numeric
+            if op_good_qty.isdigit():
+                op_good_qty = int(op_good_qty)
+            elif op_good_qty == 'N/A':  # Include rows where Op. Good Qty is 'N/A' but still process the scrap details
+                op_good_qty = None
 
-# Create DataFrame from the collected data
-df = pd.DataFrame(all_rows, columns=header)
+            # Initialize dictionary to manage scrap descriptions and quantities
+            scrap_quantities = {}
+            if scrap_details and isinstance(scrap_details, list) and scrap_details != ['N/A', '0']:
+                for item in scrap_details:
+                    if isinstance(item, dict) and 'name' in item and 'value' in item:
+                        name = item['name']
+                        value = item['value']
+                        if name == 'о'and value == 0:  # Special handling for entries with the name 'о'
+                            name = ''
+                        if name not in ["ว", "Samples", "Tensile Test"]:  # Skip excluded descriptions
+                            if name in scrap_quantities:
+                                scrap_quantities[name] += value
+                            else:
+                                scrap_quantities[name] = value
 
-# Save the DataFrame to a new Excel file
-# df.to_excel('/Users/zyy/Documents/GitHub/TE-AI-Cup/updated_output.xlsx', index=False)
+            # Check conditions to apply operation and work center from previous valid entry
+            if previous_row and operation == 'N/A' and (op_good_qty is not None or scrap_quantities):
+                operation = previous_row['operation']
+                work_center = previous_row['work_center']
 
-# print("A new Excel file has been created with the updated data.")
+            # Append rows
+            if scrap_quantities:
+                for description, quantity in scrap_quantities.items():
+                # Update the Scrap Code based on the description from the mapping
+                    scrap_code = SCRAP_CODE_MAPPING.get(description, '')
+                    all_rows.append([work_center, operation, scrap_code, description, op_good_qty if op_good_qty is not None else 0, quantity] + [None] * (len(COLUMNHEADING) - 6))
+            else:
+                all_rows.append([work_center, operation, None, '', op_good_qty if op_good_qty is not None else 0, 0] + [None] * (len(COLUMNHEADING) - 6))
+
+            # Update previous_row for next iteration
+            previous_row = {
+                'operation': operation,
+                'work_center': work_center,
+                'op_good_qty': op_good_qty,
+                'scrap_quantities': scrap_quantities
+            }
+
+    df = pd.DataFrame(all_rows, columns=COLUMNHEADING)
+
+    # Synchronize the columns with the same data but different headers
+    df['Parent Good qty'] = df['Entered Good Qty'] = df['Op. Good Qty']
+    df['Parent Scrap qty'] = df['Entered Scrap Qty'] = df['Op. Scrap Qty']
+
+    df.to_excel(excel_path, index = False)
+    print(f"Excel file has been updated at {excel_path}")
+    return df, len(all_rows)
+
+'''
+def save_to_excel(df, filename):
+    df.to_excel(filename, index=False)
+    print(f"Excel file has been saved to {filename}")
+'''
+
+def main(firstPage_imagePath, restPages_jsonPath):
+    # Define the path to the output Excel file
+    excel_output_file = os.path.join(os.getcwd(), 'final_output.xlsx')
+    
+    # Initialize or load the DataFrame
+    if os.path.exists(excel_output_file):
+        df = pd.read_excel(excel_output_file)
+    else:
+        df = pd.DataFrame(columns=COLUMNHEADING)
+
+    # Load JSON data
+    json_data = load_json(restPages_jsonPath)
+    # Process data and get updated DataFrame
+    df, json_row_count = process_data(json_data, excel_output_file)
+    
+    # Save the updated DataFrame to Excel
+    df.to_excel(excel_output_file, index=False)
+    print(f"JSON data updated to Excel at {excel_output_file}")
+    
+    # Process OCR data and update the Excel file
+    excel_ocr.process_image_for_ocr(firstPage_imagePath, excel_output_file, json_row_count)
+
+    
+# Testing
+#firstPage_imagePath = '/Users/zyy/Desktop/TE/excel_update/first_page_dataset/7855.png'
+#restPages_jsonPath = '/Users/zyy/Documents/GitHub/TE-AI-Cup/nextjs/works/main/test.json'
+
+#main(firstPage_imagePath, restPages_jsonPath)
