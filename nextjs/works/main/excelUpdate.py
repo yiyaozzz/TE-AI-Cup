@@ -106,7 +106,7 @@ def main(firstPage_imagePath, restPages_jsonPath):
 
     
 # Testing
-#firstPage_imagePath = '/Users/zyy/Desktop/TE/excel_update/first_page_dataset/7855.png'
-#restPages_jsonPath = '/Users/zyy/Documents/GitHub/TE-AI-Cup/nextjs/works/main/test.json'
+firstPage_imagePath = '/Users/zyy/Desktop/TE/excel_update/first_page_dataset/7855.png'
+restPages_jsonPath = '/Users/zyy/Documents/GitHub/TE-AI-Cup/nextjs/works/main/test.json'
 
-#main(firstPage_imagePath, restPages_jsonPath)
+main(firstPage_imagePath, restPages_jsonPath)
