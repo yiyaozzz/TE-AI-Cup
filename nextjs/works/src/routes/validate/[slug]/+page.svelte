@@ -97,7 +97,6 @@
 <style>
 	body {
 		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-		background-color: #e8effc;
 		margin: 0;
 		padding: 20px;
 		color: #333;

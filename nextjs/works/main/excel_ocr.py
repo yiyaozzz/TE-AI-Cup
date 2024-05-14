@@ -7,13 +7,19 @@ from doctr.models import ocr_predictor
 import os
 import pandas as pd
 import re
+import datetime
+from variables import COLUMNHEADING
+
 
 def crop_image(image):
-    crop_lines = (580,)  
+
+    crop_lines = (580,)
     cropped_image = image[:crop_lines[0], :]
     return cropped_image
 
+
 def run_ocr_on_image(cropped_image, model):
+
     image_pil = Image.fromarray(cv2.cvtColor(cropped_image, cv2.COLOR_BGR2RGB))
     img_byte_arr = BytesIO()
     image_pil.save(img_byte_arr, format='PNG')
@@ -30,8 +36,8 @@ def run_ocr_on_image(cropped_image, model):
 
 
 def parse_data_from_ocr_text(ocr_text):
+
     data = {}
-    # Regex patterns to extract data
     patterns = {
         "Prod Order": r"Production Order: (\d+)",
         "Op. Good Qty": r"Production Order Qty: (\d+)",
@@ -46,67 +52,73 @@ def parse_data_from_ocr_text(ocr_text):
         if match:
             data[key] = match.group(1)
         else:
-            data[key] = ""  # Default to empty if no match found
+            data[key] = ""
 
-    # Handling Material Description specifically to include the next line number if it's numeric
-    description_match = re.search(r"Description: (.+?)(?=\n)", ocr_text)
-    if description_match:
-        description_text = description_match.group(1).strip()
-        # Find the number following the description, which is the next line
-        next_number_match = re.search(r"(\d+)\nOrder Type:", ocr_text)
-        if next_number_match:
-            description_text += " " + next_number_match.group(1)
-        data["Material Description"] = description_text
-    else:
-        data["Material Description"] = ""
     return data
 
-def write_to_excel(data, excel_path):
-    columns = ["Work Center", "Operation", "Scrap Code", "Scrap Description",
-               "Op. Good Qty", "Op. Scrap Qty", "UoM", "PPM__________",
-               "Posting date", "Entry Date", "Prod Order", "Material Number",
-               "Material Description", "Parent Good qty", "Parent Scrap qty",
-               "Order Unit", "Order Type", "Plant", "Entered Good Qty",
-               "Entered Scrap Qty", "Entered UoM"]
-    df = pd.DataFrame([[
-        "", "", "", "", data.get("Op. Good Qty", ""),
-        "", data.get("UoM", ""), "", "", "", data.get("Prod Order", ""), data.get("Material Number", ""),
-        data.get("Material Description", ""), data.get("Op. Good Qty", ""),  # Parent good qty is same as op good qty
-        "", data.get("UoM", ""), data.get("Order Type", ""), data.get("Plant", ""),
-        data.get("Op. Good Qty", ""), "", data.get("UoM", "")  # Entered quantities and UoM are the same
-    ]], columns=columns)
-    os.makedirs(os.path.dirname(excel_path), exist_ok=True)
+
+def write_to_excel(data, excel_path, row_count):
+
+    # Ensure the directory exists
+    directory = os.path.dirname(excel_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+
+# Load existing data or create a new DataFrame if the file doesn't exist
+    if os.path.exists(excel_path):
+        df = pd.read_excel(excel_path)
+        # Convert all columns to object type to avoid dtype issues
+        df = df.astype('object')
+    else:
+        df = pd.DataFrame(columns=COLUMNHEADING)
+        df = df.astype('object')
+
+    # Adjust df to match the expected number of rows
+    if len(df) < row_count:
+        # If df has fewer rows than needed, append missing rows
+        additional_rows = pd.DataFrame([pd.Series(
+            [None]*len(COLUMNHEADING), index=COLUMNHEADING)] * (row_count - len(df)))
+        df = pd.concat([df, additional_rows], ignore_index=True)
+    elif len(df) > row_count:
+        #  If df has more rows than needed, truncate the excess
+        df = df.iloc[:row_count]
+
+# Specific data equalization logic
+    uom_value = data.get('UoM', "")
+    good_qty_value = data.get('Op. Good Qty', "")
+    # Apply the data to all required rows for specified columns
+    for col in ['UoM', 'Order Unit', 'Entered UoM']:
+        df[col] = [uom_value] * row_count
+
+    for col in ['Op. Good Qty', 'Parent Good qty', 'Entered Good Qty']:
+        df.loc[0, col] = good_qty_value
+
+    # Overwrite data directly in the first row and replicate it to all required rows
+    for key in ['Prod Order', 'Material Number', 'Material Description', 'Order Type', 'Plant']:
+        # Overwrite and fill down the column
+        df[key] = [data.get(key, "")] * row_count
+
+    # Populate 'Posting date' and 'Entry Date' with today's date
+    # Get today's date in the specified format
+    today_date = datetime.datetime.now().strftime("%m/%d/%y")
+    df['Posting date'] = [today_date] * row_count
+    df['Entry Date'] = [today_date] * row_count
+
     df.to_excel(excel_path, index=False)
-    print(f"Data successfully written to Excel at {excel_path}")
-    
-def process_image_for_ocr(image_path):
+
+
+def process_image_for_ocr(image_path, excel_path, row_count):
+
     model = ocr_predictor(pretrained=True)
     image = np.copy(cv2.imread(image_path))
     cropped_image = crop_image(image)
     recognized_text = run_ocr_on_image(cropped_image, model)
     print("OCR results:")
     print(recognized_text)
-
     parsed_data = parse_data_from_ocr_text(recognized_text)
-
-    # Creating the ocrOutput directory if it does not exist
-    output_dir = os.path.join(os.getcwd(), "ocrOutput")
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Define the paths for saving the OCR results text and Excel files
-    base_name = os.path.basename(image_path).replace(".png", "")
-    text_file_path = os.path.join(output_dir, f"{base_name}.txt")
-    excel_file_path = os.path.join(output_dir, f"{base_name}.xlsx")
-                                   
-    # Saving the OCR results to a text file
-    with open(text_file_path, 'w') as f:
-        f.write(recognized_text)
-    print(f"OCR results saved to {text_file_path}")
-
-    # Write the results to an Excel file
-    write_to_excel(parsed_data, excel_file_path)
-
-# Testing
+    write_to_excel(parsed_data, excel_path, row_count)
+    print(f"Data successfully written to Excel at {excel_path}")
+    # Testing
 # Example path to the image
-# image_path = '/Users/zyy/Documents/GitHub/TE-AI-Cup/500000294405_pages/page_1.png'
+# image_path = '/Users/zyy/Desktop/TE/excel_update/first_page_dataset/7855.png'
 # process_image_for_ocr(image_path)

@@ -98,7 +98,6 @@ def track_object(directory_path, base_output_dir='finalOutput'):
                 x1, y1, x2, y2 = max(0, x1), max(0, y1), min(
                     img.shape[1], x2), min(img.shape[0], y2)
                 if x2 <= x1 or y2 <= y1:
-                    print("HELLO")
                     continue  # Skip invalid boxes
 
                 cropped_img = img[y1:y2, x1:x2]
