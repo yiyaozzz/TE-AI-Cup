@@ -3,7 +3,7 @@ import sys
 import re
 from finalSheet import excel_prod
 import os
-from main.excelSheet import sheetmain
+# from main.excelSheet import sheetmain
 
 
 def validate_col3_with_flags(file_path):
@@ -88,7 +88,7 @@ def main():
         data = json.load(file)
 
     uidVal = os.path.basename(pdf_path)
-    print('UID VAL PATH: '+uidVal)
+    # print('UID VAL PATH: '+uidVal)
     uidVal = uidVal.split('.')[0]
     uidVal = uidVal.split('output_')[-1]
     result = search_first_flag(data)
@@ -112,10 +112,10 @@ def main():
             print("17")
         else:
             print(int(pageNum) + 1)
-    #     # UID.exlsx
-    else:
-        sheetmain(
-            f'nextjs/works/uploads/{uidVal}/page_1.png', f'processing/{uidVal}')
+    # #     # UID.exlsx
+    # else:
+    #     sheetmain(
+    #         f'nextjs/works/uploads/{uidVal}/page_1.png', f'processing/{uidVal}')
 
 
 if __name__ == "__main__":
