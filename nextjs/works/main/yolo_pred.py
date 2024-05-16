@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 from ultralytics.utils.plotting import Annotator
 import os
-import time
+#import time
 from PIL import Image
 
 model = YOLO('model/best4.pt')

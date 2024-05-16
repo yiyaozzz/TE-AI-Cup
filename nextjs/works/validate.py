@@ -88,10 +88,10 @@ def main():
         data = json.load(file)
 
     uidVal = os.path.basename(pdf_path)
-    print('UID VAL PATH: '+uidVal)
     uidVal = uidVal.split('.')[0]
     uidVal = uidVal.split('output_')[-1]
     result = search_first_flag(data)
+    #print('UID VAL PATH: '+uidVal)
 
     if result:
         flag_location = result
@@ -115,7 +115,7 @@ def main():
     #     # UID.exlsx
     else:
         sheetmain(
-            f'nextjs/works/uploads/{uidVal}/page_1.png', f'processing/{uidVal}')
+            f'uploads/{uidVal}_pages/page_1.png', f'processing/{uidVal}.pdf.json', uidVal)
 
 
 if __name__ == "__main__":

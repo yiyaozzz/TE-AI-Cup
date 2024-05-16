@@ -32,7 +32,7 @@ export async function load({ params }) {
 
 	if (stdout.length == 0) {
 		// Add the exec commands here
-		redirect(302, '/');
+		redirect(302, `/api/link/?id=${params.slug.slice(0,-4)}`);
 	}
 
 	/* `let lines = stdout` is assigning the value of the `stdout` variable to the `lines` variable. This

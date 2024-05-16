@@ -78,7 +78,7 @@ def process_data(data, excel_path):
     df['Parent Scrap qty'] = df['Entered Scrap Qty'] = df['Op. Scrap Qty']
 
     df.to_excel(excel_path, index=False)
-    print(f"Excel file has been updated at {excel_path}")
+    #print(f"Excel file has been updated at {excel_path}")
     return df, len(all_rows)
 
 
@@ -89,9 +89,10 @@ def save_to_excel(df, filename):
 '''
 
 
-def sheetmain(firstPage_imagePath, restPages_jsonPath):
+def sheetmain(firstPage_imagePath, restPages_jsonPath, uidVal):
     # Define the path to the output Excel file
-    excel_output_file = os.path.join(os.getcwd(), 'final_output.xlsx')
+    excel_output_file = os.path.join("processing", f'{uidVal}.xlsx')
+    #print("Excel " + excel_output_file )
 
     # Initialize or load the DataFrame
     if os.path.exists(excel_output_file):
@@ -106,7 +107,7 @@ def sheetmain(firstPage_imagePath, restPages_jsonPath):
 
     # Save the updated DataFrame to Excel
     df.to_excel(excel_output_file, index=False)
-    print(f"JSON data updated to Excel at {excel_output_file}")
+    #print(f"JSON data updated to Excel at {excel_output_file}")
 
     # Process OCR data and update the Excel file
     excel_ocr.process_image_for_ocr(

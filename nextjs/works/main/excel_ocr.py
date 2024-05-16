@@ -8,7 +8,7 @@ import os
 import pandas as pd
 import re
 import datetime
-from variables import COLUMNHEADING
+from main.variables import COLUMNHEADING
 
 
 def crop_image(image):
@@ -113,11 +113,11 @@ def process_image_for_ocr(image_path, excel_path, row_count):
     image = np.copy(cv2.imread(image_path))
     cropped_image = crop_image(image)
     recognized_text = run_ocr_on_image(cropped_image, model)
-    print("OCR results:")
-    print(recognized_text)
+    #print("OCR results:")
+    #print(recognized_text)
     parsed_data = parse_data_from_ocr_text(recognized_text)
     write_to_excel(parsed_data, excel_path, row_count)
-    print(f"Data successfully written to Excel at {excel_path}")
+    #print(f"Data successfully written to Excel at {excel_path}")
     # Testing
 # Example path to the image
 # image_path = '/Users/zyy/Desktop/TE/excel_update/first_page_dataset/7855.png'
